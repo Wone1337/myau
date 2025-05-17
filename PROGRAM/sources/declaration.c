@@ -1,4 +1,5 @@
 #include "../headers/declaration.h"
+#include "../headers/nfd.h"
 
 //________________VAR_DEFINITIONS____________________
 SDL_Window *main_win = NULL;
@@ -102,4 +103,100 @@ void destruct_alloc_mem(unsigned int amount,...)
 
 		va_end(args);
 
+	}
+
+
+void interface_appear(void)
+	{
+
+		int gap = 0;
+
+		//GET WINDOW SIZE FOR 
+
+		SDL_GetWindowSize(main_win,&cfg->w,&cfg->h);
+
+		printf("w = %d,h = %d\n\r",cfg->w,cfg->h);
+		
+		//TOP BAR
+		SDL_FRect top_bar;
+		
+		//TOP BAR BUTTON
+		SDL_FRect exit_button;
+
+		SDL_FRect info_button;
+
+		//MAIN BAR
+
+		SDL_FRect file_space;
+
+		//FOOTER BAR
+
+		SDL_FRect enc_dec_button;
+
+		SDL_FRect add_files_button;
+
+		gap = cfg->h/40;
+
+		if(cfg->w <= 800 && cfg->h <= 600)
+		{	
+				
+			top_bar.x = 0,top_bar.y = 0,top_bar.w = cfg->w,top_bar.h = cfg->h/8-gap;
+
+			file_space.x = 30 ,file_space.y = top_bar.h+gap, file_space.w = cfg->w-file_space.x*2, file_space.h = cfg->h-(cfg->h/2);
+
+			enc_dec_button.x = file_space.x ,enc_dec_button.y = file_space.y + file_space.h + gap ,enc_dec_button.w = file_space.w, enc_dec_button.h = cfg->h/8;
+
+			add_files_button.x = enc_dec_button.x , add_files_button.y = enc_dec_button.y + enc_dec_button.h + gap, add_files_button.w = enc_dec_button.w , add_files_button.h = enc_dec_button.h;
+
+		}
+		else if(cfg->w <= 1024 || cfg->h <= 768)
+		{
+			
+			int div = 8;
+
+			top_bar.x = 0,top_bar.y = 0,top_bar.w = cfg->w/8,top_bar.h = cfg->h;
+
+			if(cfg->w >= 1000)
+			{
+				top_bar.w = cfg->w/16;
+			}
+
+			file_space.x = top_bar.w+gap ,file_space.y = 30 ,file_space.w = cfg->w-(cfg->w/3), file_space.h = cfg->h-file_space.y*2;
+
+			enc_dec_button.x = file_space.x + file_space.w + gap + ((file_space.x + file_space.w + gap)/20) ,enc_dec_button.y = file_space.y ,enc_dec_button.w = cfg->h/8, enc_dec_button.h = file_space.w/2;
+
+			add_files_button.x = enc_dec_button.x, add_files_button.y = enc_dec_button.y, add_files_button.w = enc_dec_button.w , add_files_button.h = enc_dec_button.h;
+			//add_files_button.x = enc_dec_button.x , add_files_button.y = enc_dec_button.y - enc_dec_button.h + gap , add_files_button.w = enc_dec_button.w, add_files_button.h = enc_dec_button.h;
+
+
+		}
+//		else if(cfg->w <= 1280 || cfg-> <= 1024)
+//		{
+//
+//		}
+
+		SDL_SetRenderDrawColor(main_render,33, 204, 104,255);
+			
+		SDL_RenderClear(main_render);	
+		
+		SDL_SetRenderDrawColor(main_render,100, 100, 100, 255);
+
+		SDL_SetRenderDrawColor(main_render,66,43,21,255);
+		
+		SDL_RenderFillRect(main_render,&top_bar);
+
+		SDL_SetRenderDrawColor(main_render,76,99,12,255);
+
+		SDL_RenderFillRect(main_render,&file_space);
+
+		SDL_SetRenderDrawColor(main_render,120,32,77,255);
+
+		SDL_RenderFillRect(main_render,&enc_dec_button);
+
+		SDL_RenderFillRect(main_render,&add_files_button);
+
+		SDL_RenderPresent(main_render);
+
+
+		return;
 	}
