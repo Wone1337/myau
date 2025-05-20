@@ -28,7 +28,7 @@ enum ERROR_MSG_MODE
 //ERR_MSG(MSG,ERROR_MODE), where ERROR_MODE says us about a [CMN] - regular error output, and [SDL] - SDL error logs output
 
 //_____________DEFINES______________________
-#define TITLE_NAME "[NOTWI] [Pre-alpha] ACHIVATOR [BUILD 0.0.2]"
+#define TITLE_NAME "[NOTWI] [Pre-alpha] ACHIVATOR [BUILD 0.0.3]"
 #define CTRL_KEY(KEY) (0x1F & (KEY)) 
 
 //_____________STRUCTURES_____________________
@@ -56,5 +56,6 @@ void disable_raw_mode(void);
 void archivator_init(void);
 void destruct_alloc_mem(unsigned int, ...);
 void interface_appear(void);
+void exit_from_program(void);
 
 #endif

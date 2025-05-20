@@ -34,7 +34,6 @@ void archivator_init(void)
 			exit(0x01);
 		}
 		
-
 		if(SDL_GL_LoadLibrary(NULL) == true)
 		{
 			cfg->flags |= SDL_WINDOW_OPENGL;
@@ -92,7 +91,7 @@ void destruct_alloc_mem(unsigned int amount,...)
 
 		va_list args;
 
-		va_start(args,fmt_str);
+		va_start(args);
 		
 		unsigned int counter;
 
@@ -108,6 +107,7 @@ void destruct_alloc_mem(unsigned int amount,...)
 
 void interface_appear(void)
 	{
+		//INIT VAR
 
 		int gap = 0;
 
@@ -115,12 +115,12 @@ void interface_appear(void)
 
 		SDL_GetWindowSize(main_win,&cfg->w,&cfg->h);
 
-		printf("w = %d,h = %d\n\r",cfg->w,cfg->h);
+		//printf("w = %d,h = %d\n\r",cfg->w,cfg->h);
 		
 		//TOP BAR
 		SDL_FRect top_bar;
-		
-		//TOP BAR BUTTON
+
+
 		SDL_FRect exit_button;
 
 		SDL_FRect info_button;
@@ -129,18 +129,27 @@ void interface_appear(void)
 
 		SDL_FRect file_space;
 
+		SDL_FRect delete_file_from_list;
+
 		//FOOTER BAR
 
 		SDL_FRect enc_dec_button;
 
 		SDL_FRect add_files_button;
 
+		//INTERFACE 
+
 		gap = cfg->h/40;
 
-		if(cfg->w <= 800 && cfg->h <= 600)
+		if(cfg->w <= 854 ||  cfg->h <= 458)
 		{	
 				
+
 			top_bar.x = 0,top_bar.y = 0,top_bar.w = cfg->w,top_bar.h = cfg->h/8-gap;
+			
+			exit_button.x = top_bar.x , exit_button.y = top_bar.y , exit_button.w = 100 ,exit_button.h = top_bar.h ;
+
+			info_button.x = top_bar.x + exit_button.w + gap , info_button.y = top_bar.y , info_button.w = exit_button.w,info_button.h = top_bar.h;
 
 			file_space.x = 30 ,file_space.y = top_bar.h+gap, file_space.w = cfg->w-file_space.x*2, file_space.h = cfg->h-(cfg->h/2);
 
@@ -149,54 +158,144 @@ void interface_appear(void)
 			add_files_button.x = enc_dec_button.x , add_files_button.y = enc_dec_button.y + enc_dec_button.h + gap, add_files_button.w = enc_dec_button.w , add_files_button.h = enc_dec_button.h;
 
 		}
-		else if(cfg->w <= 1024 || cfg->h <= 768)
+		else if(cfg->w <= 1920 || cfg->h <= 1080)
 		{
+
+			top_bar.x = 0,top_bar.y = 0,top_bar.w = cfg->w/gap,top_bar.h = cfg->h;
 			
-			int div = 8;
-
-			top_bar.x = 0,top_bar.y = 0,top_bar.w = cfg->w/8,top_bar.h = cfg->h;
-
-			if(cfg->w >= 1000)
-			{
-				top_bar.w = cfg->w/16;
-			}
+			exit_button.x = top_bar.x , exit_button.y = top_bar.y , exit_button.w = top_bar.w ,exit_button.h = 100;
+			
+			info_button.x = top_bar.x , info_button.y = top_bar.y + exit_button.h + gap , info_button.w = exit_button.w, info_button.h = exit_button.h;
 
 			file_space.x = top_bar.w+gap ,file_space.y = 30 ,file_space.w = cfg->w-(cfg->w/3), file_space.h = cfg->h-file_space.y*2;
 
-			enc_dec_button.x = file_space.x + file_space.w + gap + ((file_space.x + file_space.w + gap)/20) ,enc_dec_button.y = file_space.y ,enc_dec_button.w = cfg->h/8, enc_dec_button.h = file_space.w/2;
+			enc_dec_button.x = file_space.x + file_space.w + gap + gap ,enc_dec_button.y = file_space.y ,enc_dec_button.w = file_space.w/3-gap, enc_dec_button.h = file_space.h/2;
 
-			add_files_button.x = enc_dec_button.x, add_files_button.y = enc_dec_button.y, add_files_button.w = enc_dec_button.w , add_files_button.h = enc_dec_button.h;
-			//add_files_button.x = enc_dec_button.x , add_files_button.y = enc_dec_button.y - enc_dec_button.h + gap , add_files_button.w = enc_dec_button.w, add_files_button.h = enc_dec_button.h;
+			add_files_button.x = enc_dec_button.x, add_files_button.y = enc_dec_button.y+enc_dec_button.h+gap, add_files_button.w = enc_dec_button.w , add_files_button.h = enc_dec_button.h-gap;
 
 
 		}
-//		else if(cfg->w <= 1280 || cfg-> <= 1024)
-//		{
-//
-//		}
+		else if(cfg->w <= 1280 || cfg->h <= 1024)
+		{
 
-		SDL_SetRenderDrawColor(main_render,33, 204, 104,255);
-			
-		SDL_RenderClear(main_render);	
+		}
+		else if(cfg->w <= 1600 || cfg->h <= 900)
+		{
+
+		}
+		else
+		{
+
+		}
+
+		//FILL ALL OBJECT COLOR
+
+		//BACKGROUND FILL
+
+		SDL_SetRenderDrawColor(main_render,41, 41, 40, 1);
 		
-		SDL_SetRenderDrawColor(main_render,100, 100, 100, 255);
+		//CLEAR	
+		SDL_RenderClear(main_render);
 
-		SDL_SetRenderDrawColor(main_render,66,43,21,255);
+		//TOP_BAR FILL
+		SDL_SetRenderDrawColor(main_render, 255, 64, 0, 1);
 		
 		SDL_RenderFillRect(main_render,&top_bar);
 
-		SDL_SetRenderDrawColor(main_render,76,99,12,255);
+		//TOP_BAR BUTTONS FILL
+		
+		SDL_SetRenderDrawColor(main_render, 78, 54, 234, 1);
+		
+		SDL_RenderFillRect(main_render,&exit_button);
+
+		SDL_RenderFillRect(main_render,&info_button);			
+
+		//FILE SPACE FILL
+		SDL_SetRenderDrawColor(main_render,255, 152, 0, 1);
 
 		SDL_RenderFillRect(main_render,&file_space);
 
-		SDL_SetRenderDrawColor(main_render,120,32,77,255);
+		//ENC_DEC_BUTTON AND ADD_FILES_BUTTON FILL
+		SDL_SetRenderDrawColor(main_render,46, 204, 113,1 );
 
 		SDL_RenderFillRect(main_render,&enc_dec_button);
 
-		SDL_RenderFillRect(main_render,&add_files_button);
+		SDL_SetRenderDrawColor(main_render,46, 204, 113, 1);
 
+		SDL_RenderFillRect(main_render,&add_files_button);
+	
+		
+		float d = 0;
+		float e = 0;
+
+		SDL_GetGlobalMouseState(&d,&e);
+		
+		//printf("d = %f e = %f\n\r",d,e);
+
+		//printf("x = %f y = %f w = %f h = %f\n\r",info_button.x,info_button.y,info_button.w+info_button.x,info_button.h+info_button.y);
+		//ALL OBJECT FUNCTIONAL
+		
+		while(SDL_PollEvent(&main_event))
+		{
+
+			//if(main_event.type == SDL_EVENT_QUIT)
+			//{
+			//	close_window_check = true;
+			//}
+
+
+			//puts("HUI\n\r");
+				
+			if(main_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+			{
+
+				if( ( (exit_button.x <= d) && (d <= exit_button.w + exit_button.x))  &&  ( (exit_button.y <= e) && (e <= exit_button.h + exit_button.y )))
+				{
+					close_window_check = true;
+				}
+
+					
+				if( ( (info_button.x <= d) && (d <= info_button.w + info_button.x))  &&  ( (info_button.y <= e) && (e <= info_button.h + info_button.y )))
+				{
+					puts("HUI1\n\r");
+				}
+
+
+			}
+
+			if(main_event.type = SDL_EVENT_DROP_FILE)
+			{	
+				
+				if( ( (file_space.x <= d) && (d <= file_space.w + file_space.x))  &&  ( (file_space.y <= e) && (e <= file_space.h + file_space.y )))
+				{
+					puts("HUI2\n\r");
+			
+				}
+			}
+
+		}
+		
+		// RENDER ALL OBJECT
 		SDL_RenderPresent(main_render);
 
 
+		return;
+	}
+
+void exit_from_program(void)
+	{
+		disable_raw_mode();
+
+		destruct_alloc_mem(1,cfg);
+
+		SDL_DestroyRenderer(main_render);
+
+		SDL_DestroyWindow(main_win);
+
+		TTF_Quit();
+
+		SDL_Quit();
+
+		
 		return;
 	}
