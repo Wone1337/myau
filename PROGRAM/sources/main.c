@@ -42,14 +42,11 @@ int main([[maybe_unused]] int argc ,[[maybe_unused]] char *argv[])
 
 
 
-		enable_raw_mode();
+		//enable_raw_mode();
 
 		
 		while(!close_window_check)
 		{
-			
-			
-		
 			
 			interface_appear();
 				

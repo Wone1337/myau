@@ -6,8 +6,8 @@
 #include "SDL3_ttf/SDL_ttf.h"
 #include "SDL3_image/SDL_image.h"
 #include <stdbool.h>
-#include <termios.h>
-#include <unistd.h>
+//#include <termios.h>
+//#include <unistd.h>
 #include <stdarg.h>
 
 #if !defined(DECLARATION)
@@ -17,7 +17,6 @@
 
 enum ERROR_MSG_MODE
 {
-	ERRNO_FAILURE = -1,
 	SDL_ERR = 1001,
 	CMN_ERR = 1000
 };
@@ -29,7 +28,12 @@ enum ERROR_MSG_MODE
 
 //_____________DEFINES______________________
 #define TITLE_NAME "[NOTWI] [Pre-alpha] ACHIVATOR [BUILD 0.0.3]"
-#define CTRL_KEY(KEY) (0x1F & (KEY)) 
+
+#define WIN_WIDTH 0x280
+
+#define WIN_HEIGHT 0x1E0
+
+#define WIN_FLAGS (SDL_WINDOW_RESIZABLE) 
 
 //_____________STRUCTURES_____________________
 typedef struct config
@@ -38,7 +42,7 @@ typedef struct config
 		unsigned int h;
 		const char* title;
 		SDL_WindowFlags flags;
-		struct termios origin;		
+				
 
 	} INIT_CFG; 
 
@@ -51,8 +55,6 @@ extern INIT_CFG *cfg;
 
 
 //_____________FUNCTIONS______________________
-void enable_raw_mode(void);
-void disable_raw_mode(void);
 void archivator_init(void);
 void destruct_alloc_mem(unsigned int, ...);
 void interface_appear(void);

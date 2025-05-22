@@ -20,19 +20,15 @@ void archivator_init(void)
 			exit(0x01);
 		}
 		
-		cfg->w = 0x280;
+		cfg->w = WIN_WIDTH;
 
-		cfg->h = 0x1E0;
+		cfg->h = WIN_HEIGHT;
 
 		cfg->title = TITLE_NAME;
 
-		cfg->flags = SDL_WINDOW_RESIZABLE;
+		cfg->flags = WIN_FLAGS;	
 
-		if(tcgetattr(STDIN_FILENO,&cfg->origin) == ERRNO_FAILURE)
-		{
-			ERR_MSG("[archivator_init]tsgetattr[termios.h]: failed",CMN_ERR);
-			exit(0x01);
-		}
+
 		
 		if(SDL_GL_LoadLibrary(NULL) == true)
 		{
@@ -50,41 +46,6 @@ void archivator_init(void)
 		return;
 	}
 
-void enable_raw_mode(void)
-	{
-		
-		struct termios raw;
-
-		raw = cfg->origin;
-
-	   	raw.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP| INLCR | IGNCR | ICRNL | IXON);
-           	raw.c_oflag &= ~OPOST;
-           	raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-           	raw.c_cflag &= ~(CSIZE | PARENB);
-           	raw.c_cflag |= CS8;
-		raw.c_cc[VMIN] = 0x00;
-		raw.c_cc[VTIME] = 0x1E;
-
-		if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw) == ERRNO_FAILURE)
-		{
-			ERR_MSG("[enable_raw_mode]tcsetattr[termios.h]: failed",CMN_ERR);
-			exit(0x01);
-		}
-
-
-		return;
-	}
-
-void disable_raw_mode(void)
-	{
-		if(tcsetattr(STDIN_FILENO,TCSANOW,&cfg->origin) == ERRNO_FAILURE)
-		{
-			ERR_MSG("[disable_raw_mode]tssetattr[termios.h]: failed",CMN_ERR);
-			exit(0x01);
-		}
-		
-		return;
-	}
 
 void destruct_alloc_mem(unsigned int amount,...)
 	{
@@ -227,25 +188,35 @@ void interface_appear(void)
 		
 		float d = 0;
 		float e = 0;
-
-		SDL_GetGlobalMouseState(&d,&e);
 		
 		//printf("d = %f e = %f\n\r",d,e);
 
 		//printf("x = %f y = %f w = %f h = %f\n\r",info_button.x,info_button.y,info_button.w+info_button.x,info_button.h+info_button.y);
+		
 		//ALL OBJECT FUNCTIONAL
 		
 		while(SDL_PollEvent(&main_event))
 		{
 
-			//if(main_event.type == SDL_EVENT_QUIT)
-			//{
-			//	close_window_check = true;
-			//}
+			d = main_event.motion.x;
+			e = main_event.motion.y;
 
-
-			//puts("HUI\n\r");
+			//printf("d = %f e = %f\n\r",d,e);			
+			
+			if(main_event.type == SDL_EVENT_KEY_DOWN)
+			{	
 				
+				bool *key_state = SDL_GetKeyboardState(NULL);
+
+				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_Q]))
+				{
+					close_window_check = true;
+
+				}
+
+			}
+
+
 			if(main_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 			{
 
@@ -263,14 +234,11 @@ void interface_appear(void)
 
 			}
 
-			if(main_event.type = SDL_EVENT_DROP_FILE)
+			if(main_event.type == SDL_EVENT_DROP_FILE)
 			{	
 				
-				if( ( (file_space.x <= d) && (d <= file_space.w + file_space.x))  &&  ( (file_space.y <= e) && (e <= file_space.h + file_space.y )))
-				{
-					puts("HUI2\n\r");
+				//puts("HUI2\n\r");
 			
-				}
 			}
 
 		}
@@ -284,7 +252,6 @@ void interface_appear(void)
 
 void exit_from_program(void)
 	{
-		disable_raw_mode();
 
 		destruct_alloc_mem(1,cfg);
 
