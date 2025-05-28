@@ -77,8 +77,8 @@ typedef struct RECTWP
 	{
 		SDL_FRect rect;
 		RGBA main_color;
-		RGBA transition_color;
-		RGBA current_color;
+		//RGBA transition_color;
+		//RGBA current_color;
 		SDL_Texture *texture;
 		TEXT *rect_text;
 
@@ -112,9 +112,9 @@ void archivator_init(void);
 void interface_appear(void);
 void exit_from_program(void);
 RECTWP* create_rectwp(WINDOW_SET *,RGBA,char*,char*,char*,unsigned int);
-void destroy_rectwp(RECTWP *);
-WINDOW_SET* init_window_set_obj(WINDOW_SET*,CONFIG);
-void destroy_window_set_obj(WINDOW_SET*);
+void destroy_rectwp(RECTWP **);
+WINDOW_SET * init_window_set_obj(WINDOW_SET*,CONFIG);
+void destroy_window_set_obj(WINDOW_SET**);
 //float linear_interpolation(float,float,float);
 void fill_rect(WINDOW_SET *,RECTWP *,RGBA);
 //void color_transition(RECTWP*,float);
