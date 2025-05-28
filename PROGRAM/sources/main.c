@@ -14,38 +14,15 @@ int main([[maybe_unused]] int argc ,[[maybe_unused]] char *argv[])
 			ERR_MSG("[main]TTF_INIT: Init failed",SDL_ERR);
 			return 0x01;
 		}
-
+		
 		archivator_init();
 
-		main_win = SDL_CreateWindow(cfg->title,cfg->w,cfg->h,cfg->flags);
-
-		if(main_win == NULL)
+		if(!SDL_SetWindowMinimumSize(main_win->win,WIN_WIDTH,WIN_HEIGHT))
 		{
-			ERR_MSG("[main]MAIN WIN: create failed",SDL_ERR);
-			return 0x01;
-		}	
-		
-		main_render = SDL_CreateRenderer(main_win,NULL);
-		
-		if(main_render == NULL)
-		{
-			ERR_MSG("[main]RENDER: create failed",SDL_ERR);
-			SDL_DestroyWindow(main_win);
-			SDL_Quit();
-			return 0x01;
+			ERR_MSG("[main]SET_MIN_WIN_SIZE: error on settin up",SDL_ERR);
 		}
-
-		if(SDL_SetWindowMinimumSize(main_win,cfg->w,cfg->h) == false)
-		{
-			ERR_MSG("[main]SET_WIN_MIN_SIZE: failed",CMN_ERR);
-		}
-
-
-
-		//enable_raw_mode();
-
 		
-		while(!close_window_check)
+		while(main_win->check)
 		{
 			
 			interface_appear();

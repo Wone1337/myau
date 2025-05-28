@@ -6,14 +6,14 @@
 #include "SDL3_ttf/SDL_ttf.h"
 #include "SDL3_image/SDL_image.h"
 #include <stdbool.h>
-//#include <termios.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include <stdarg.h>
 
 #if !defined(DECLARATION)
 #define DECLARATION
 
 //_______________ENUMS______________________________
+
 
 enum ERROR_MSG_MODE
 {
@@ -33,31 +33,90 @@ enum ERROR_MSG_MODE
 
 #define WIN_HEIGHT 0x1E0
 
-#define WIN_FLAGS (SDL_WINDOW_RESIZABLE) 
-
 //_____________STRUCTURES_____________________
-typedef struct config
+  typedef struct CONFIG	
 	{	
 		unsigned int w;
 		unsigned int h;
 		const char* title;
 		SDL_WindowFlags flags;
 				
+	} CONFIG;
 
-	} INIT_CFG; 
+
+typedef struct WINDOW_SET
+	{
+		SDL_Window *win;
+		CONFIG cfg;
+		SDL_Renderer *render;
+		TTF_TextEngine *engine;
+		bool check;
+		
+	} WINDOW_SET;
+
+typedef struct RGBA
+	{
+		unsigned int red;
+		unsigned int green;
+		unsigned int blue;
+		unsigned int alpha;
+	
+	} RGBA;
+
+typedef struct TEXT
+	{
+		TTF_Font *font;
+		TTF_Text *text;
+		char *title;
+		unsigned int title_size;
+		unsigned int text_scale;
+
+	} TEXT;
+
+typedef struct RECTWP
+	{
+		SDL_FRect rect;
+		RGBA main_color;
+		RGBA transition_color;
+		RGBA current_color;
+		SDL_Texture *texture;
+		TEXT *rect_text;
+
+	} RECTWP;
 
 //_______________DATA________________________
-extern SDL_Window *main_win;
-extern bool close_window_check;
+
+//EVENT
 extern SDL_Event main_event;
-extern SDL_Renderer *main_render;
-extern INIT_CFG *cfg;
+
+//CUSTOM
+extern WINDOW_SET *main_win;
+extern WINDOW_SET *info_win;
+extern WINDOW_SET *log_win;
+extern RECTWP *top_bar;
+extern RECTWP *exit_button;
+extern RECTWP *info_button;
+extern RECTWP *log_button;
+extern RECTWP *file_space;
+extern RECTWP *delete_file_from_list;
+extern RECTWP *enc_dec_button;
+extern RECTWP *add_files_button;
+
+//VAR
+extern bool close_window_check;
+
 
 
 //_____________FUNCTIONS______________________
 void archivator_init(void);
-void destruct_alloc_mem(unsigned int, ...);
 void interface_appear(void);
 void exit_from_program(void);
+RECTWP* create_rectwp(WINDOW_SET *,RGBA,char*,char*,char*,unsigned int);
+void destroy_rectwp(RECTWP *);
+WINDOW_SET* init_window_set_obj(WINDOW_SET*,CONFIG);
+void destroy_window_set_obj(WINDOW_SET*);
+//float linear_interpolation(float,float,float);
+void fill_rect(WINDOW_SET *,RECTWP *,RGBA);
+//void color_transition(RECTWP*,float);
 
 #endif

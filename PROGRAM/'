@@ -35,8 +35,12 @@ void archivator_init(void)
 		}
 		
 		main_win = init_window_set_obj(main_win,main_cfg);
+		
+		info_win = init_window_set_obj(info_win,main_cfg);
+		
+		log_win = init_window_set_obj(log_win,main_cfg);
 
-		if(main_win == NULL)
+		if(main_win == NULL || log_win == NULL || info_win == NULL)
 		{
         		ERR_MSG("[archivator_init]MAIN_WIN_INIT: create failed", CMN_ERR);
         		exit(0x01);
@@ -322,11 +326,8 @@ void interface_appear(void)
 	
 		int gap = 0;
 
-		if(main_win && main_win->win)
-		{
+		SDL_GetWindowSize(main_win->win,&main_win->cfg.w,&main_win->cfg.h);
 
-			SDL_GetWindowSize(main_win->win,&main_win->cfg.w,&main_win->cfg.h);
-		}
 		//INTERFACE 
 
 		if(main_win->cfg.w <= 854 || main_win->cfg.h <= 458)
@@ -391,7 +392,8 @@ void interface_appear(void)
 		while(SDL_PollEvent(&main_event))
 		{
 			
-								
+			SDL_GetMouseState(&d,&e);
+						
 
 
 			printf("d = %f e = %f\n\r",d,e);
@@ -407,18 +409,18 @@ void interface_appear(void)
 				{
 					puts("pisya\n");
 						
-					if(main_win && main_win->win && main_event.window.windowID == SDL_GetWindowID(main_win->win))
+					if(main_win && main_event.window.windowID == SDL_GetWindowID(main_win->win))
 					{
 						main_win->check = false;
 					}
 puts("pisya\n");
-					if(info_win && info_win->win && main_event.window.windowID == SDL_GetWindowID(info_win->win))
+					if(info_win && main_event.window.windowID == SDL_GetWindowID(info_win->win))
 					{
 						destroy_window_set_obj(info_win);
 
 					}
 puts("pisya\n");
-					if(log_win && log_win->win &&main_event.window.windowID == SDL_GetWindowID(log_win->win))
+					if(log_win && main_event.window.windowID == SDL_GetWindowID(log_win->win))
 					{
 						destroy_window_set_obj(log_win);		
 						
@@ -432,9 +434,6 @@ puts("pisya\n");
 
 			if(main_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 			{
-				
-				SDL_GetMouseState(&d,&e);
-
 
 				if( ( (exit_button->rect.x <= d) && (d <= exit_button->rect.w + exit_button->rect.x))  &&  ( (exit_button->rect.y <= e) && (e <= exit_button->rect.h + exit_button->rect.y )))
 				{
@@ -461,12 +460,12 @@ puts("pisya\n");
 			{
 
 				puts("pisya\n");
-				if(info_win && info_win->win && main_event.window.windowID == SDL_GetWindowID(info_win->win))
+				if(info_win && main_event.window.windowID == SDL_GetWindowID(info_win->win))
 				{
 					destroy_window_set_obj(info_win);
 				}
 				puts("pisya\n");
-				if(log_win && log_win->win && main_event.window.windowID == SDL_GetWindowID(log_win->win))
+				if(log_win && main_event.window.windowID == SDL_GetWindowID(log_win->win))
 				{
 					destroy_window_set_obj(log_win);
 				}
