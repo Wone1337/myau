@@ -6,8 +6,8 @@
 #include "SDL3_ttf/SDL_ttf.h"
 #include "SDL3_image/SDL_image.h"
 #include <stdbool.h>
-#include <unistd.h>
-#include <stdarg.h>
+//#include <unistd.h>
+//#include <stdarg.h>
 
 #if !defined(DECLARATION)
 #define DECLARATION
@@ -27,14 +27,16 @@ enum ERROR_MSG_MODE
 //ERR_MSG(MSG,ERROR_MODE), where ERROR_MODE says us about a [CMN] - regular error output, and [SDL] - SDL error logs output
 
 //_____________DEFINES______________________
-#define TITLE_NAME "[NOTWI] [Pre-alpha] ACHIVATOR [BUILD 0.0.3]"
+#define TITLE_NAME "[NOTWI] [Alpha] ACHIVATOR [BUILD 1.0.0]"
 
 #define WIN_WIDTH 0x280
 
 #define WIN_HEIGHT 0x1E0
 
+#define FILE_BUF_SIZE 256
+
 //_____________STRUCTURES_____________________
-  typedef struct CONFIG	
+typedef struct CONFIG	
 	{	
 		unsigned int w;
 		unsigned int h;
@@ -63,11 +65,21 @@ typedef struct RGBA
 	
 	} RGBA;
 
+typedef struct TEXTURES
+	{
+		SDL_FRect dest_rect;
+		SDL_Texture *texture;
+		SDL_Surface *surface;
+
+	} TEXTURES;
+
+
 typedef struct TEXT
 	{
 		TTF_Font *font;
 		TTF_Text *text;
 		char *title;
+		TEXTURES *text_texture;
 		unsigned int title_size;
 		unsigned int text_scale;
 
@@ -77,12 +89,16 @@ typedef struct RECTWP
 	{
 		SDL_FRect rect;
 		RGBA main_color;
-		//RGBA transition_color;
-		//RGBA current_color;
 		SDL_Texture *texture;
 		TEXT *rect_text;
-
 	} RECTWP;
+
+typedef struct FILE_MAN
+	{
+		unsigned char *[FILE_BUF_SIZE];
+		RECTWP *file_appear;
+
+	} FILE_MAN;
 
 //_______________DATA________________________
 

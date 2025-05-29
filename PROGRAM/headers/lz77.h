@@ -7,7 +7,6 @@
 #if !defined(LZ77)
 #define LZ77
 
-
 #define LZ77_WINDOW_SIZE 4096
 #define LZ77_BUFFER_SIZE 18
 #define CHUNK_SIZE 8192

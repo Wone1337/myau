@@ -44,12 +44,12 @@ void archivator_init(void)
 
 		top_bar = create_rectwp(main_win,(RGBA){255,64,0,1},NULL,NULL,NULL,0);
 		
-		exit_button = create_rectwp(main_win,(RGBA){78,54,234,1},NULL,NULL,NULL,0);
+		exit_button = create_rectwp(main_win,(RGBA){78,54,234,1},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/cross.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf","Exit",500);
 
-		info_button = create_rectwp(main_win,(RGBA){78,54,234,1},NULL,NULL,NULL,0);
+		info_button = create_rectwp(main_win,(RGBA){78,54,234,1},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/info.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf","Info",500);
     		
-		log_button = create_rectwp(main_win,(RGBA){78,54,234,1},NULL,NULL,NULL,0);
-   			
+		log_button = create_rectwp(main_win,(RGBA){78,54,234,1},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/log.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf","Log",500);
+
 		file_space = create_rectwp(main_win,(RGBA){255,152,0,1},NULL,NULL,NULL,0);
 			
 		//delete_file_from_list = create_rectwp(255, 64, 0, 1,NULL,NULL,NULL,0);
@@ -130,7 +130,7 @@ void destroy_window_set_obj(WINDOW_SET **win_obj)
 	{
 		if(win_obj == NULL || *win_obj == NULL)
 		{
-			puts("[destroy_window_set_obj]NULL EXPECTED\n");
+			puts("[destroy_window_set_obj]ZERO NOTICED\n");
 			return ;
 		}
 
@@ -237,6 +237,7 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		temp_object->rect_text->font = NULL;
 		temp_object->rect_text->text = NULL;
 		temp_object->rect_text->title = NULL;
+		temp_object->rect_text->text_texture = NULL;
 		temp_object->rect_text->title_size = 0;
 		temp_object->rect_text->text_scale = 0;
 		//puts("HUYARA3\n");	
@@ -254,7 +255,24 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 			}
 
 		}
+		
+		temp_object->rect_text->text_texture = (TEXTURES*)malloc(sizeof(TEXTURES));
 
+		if(temp_object->rect_text->text_texture ==  NULL)
+		{
+			ERR_MSG("[create_rectwp]text_texture: alloc failed",CMN_ERR);
+			destroy_rectwp(&temp_object);
+			return temp_object;
+
+		}
+	
+		temp_object->rect_text->text_texture->dest_rect = (SDL_FRect){0,0,0,0};
+		
+		temp_object->rect_text->text_texture->texture = NULL;
+		
+		temp_object->rect_text->text_texture->surface = NULL;
+		
+		SDL_Color temp_color = (SDL_Color){0,0,0,0};
 
 		//puts("HUYARA4\n");	
 
@@ -263,16 +281,36 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		
 			temp_object->rect_text->text = TTF_CreateText(win_obj->engine, temp_object->rect_text->font, temp_object->rect_text->title , temp_object->rect_text->title_size);
 
-			if(temp_object->rect_text->text == NULL && temp_object->rect_text->font)
+			if(temp_object->rect_text->text == NULL)
 			{
 				ERR_MSG("[create_rectwp]TTF_Text: create failed",SDL_ERR);
 				destroy_rectwp(&temp_object);
 				return temp_object;
 			}
 
+			temp_object->rect_text->text_texture->surface = TTF_RenderText_Solid(temp_object->rect_text->font,title,temp_object->rect_text->title_size,temp_color);
+
+			if(temp_object->rect_text->text_texture->surface == NULL)
+			{
+				ERR_MSG("[create_rectwp]text_texture_surface: create failed",SDL_ERR);
+				destroy_rectwp(&temp_object);
+				return temp_object;
+			}
+
+			temp_object->rect_text->text_texture->texture = SDL_CreateTextureFromSurface(win_obj->render,temp_object->rect_text->text_texture->surface);
+
+			if(temp_object->rect_text->text_texture->texture == NULL)
+			{
+				ERR_MSG("[create_rectwp]text_texture_texture: create failed",SDL_ERR);
+				destroy_rectwp(&temp_object);
+				return temp_object;
+			}
+	
+
 		}
 
-		//puts("HUYARA5\n");	
+	
+			//puts("HUYARA5\n");	
 
 		return temp_object;
 	}
@@ -282,7 +320,7 @@ void destroy_rectwp(RECTWP **rect_obj)
 		if(rect_obj == NULL ||  *rect_obj == NULL)
 		{
 			
-			puts("[destroy_rectwp]NULL EXPECTED\n");
+			puts("[destroy_rectwp]ZERO NOTICED\n");
 			return;
 		}
 		
@@ -319,7 +357,22 @@ void destroy_rectwp(RECTWP **rect_obj)
 			TTF_DestroyText(obj->rect_text->text);
 		}
 
+
 		obj->rect_text->text = NULL;
+		
+		if(obj->rect_text->text_texture->texture != NULL)
+		{
+			SDL_DestroyTexture(obj->rect_text->text_texture->texture);
+		}
+
+		if(obj->rect_text->text_texture->surface != NULL)
+		{
+			SDL_DestroySurface(obj->rect_text->text_texture->surface);
+		}
+		
+		free(obj->rect_text->text_texture);
+		
+		obj->rect_text->text_texture = NULL;
 
 		free(obj->rect_text);
 	
@@ -347,7 +400,7 @@ void interface_appear(void)
 		if(main_win->cfg.w <= 854 || main_win->cfg.h <= 458)
 		{	
 				
-			gap = main_win->cfg.h/40;
+			gap = main_win->cfg.w/40;
 			
 			top_bar->rect.x = 0,top_bar->rect.y = 0,top_bar->rect.w = main_win->cfg.w,top_bar->rect.h = main_win->cfg.h/8-gap;
 			
@@ -365,7 +418,7 @@ void interface_appear(void)
 		}
 		else if(main_win->cfg.w <= 1920 || main_win->cfg.h <= 1080)
 		{
-			gap = main_win->cfg.w/40;
+			gap = main_win->cfg.h/40;
 			
 			top_bar->rect.x = 0,top_bar->rect.y = 0,top_bar->rect.w = main_win->cfg.w/gap,top_bar->rect.h = main_win->cfg.h;
 			
@@ -476,27 +529,7 @@ puts("pisya\n");
 				}		
 
 
-			}
-				
-			if(main_event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-			{
-
-//				puts("pisya\n");
-//				if(info_win && info_win->win && main_event.window.windowID == SDL_GetWindowID(info_win->win))
-//				{
-//					destroy_window_set_obj(info_win);
-//				}
-//				puts("pisya\n");
-//				if(log_win && log_win->win && main_event.window.windowID == SDL_GetWindowID(log_win->win))
-//				{
-//					destroy_window_set_obj(log_win);
-//				}
-//
-				puts("pisya\n");
-
-			}
-		
-		
+			}	
 		
 
 		//	if(main_event.type == SDL_EVENT_DROP_FILE)
@@ -516,7 +549,7 @@ puts("pisya\n");
 		
 		fill_rect(main_win,top_bar,top_bar->main_color);	
 		
-		fill_rect(main_win,exit_button,exit_button->main_color);			
+		fill_rect(main_win,exit_button,exit_button->main_color);	
 		
 		fill_rect(main_win,info_button,info_button->main_color);
 
@@ -577,22 +610,79 @@ puts("pisya\n");
 
 void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 	{
-		
+		bool check;
+		SDL_FRect temp_rect;
+
+	
 		SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
 			
 		SDL_RenderFillRect(win_obj->render,&rect_obj->rect);
+
+
+		if(rect_obj->rect_text->text_texture->texture != NULL)
+		{	
+			
+			temp_rect = rect_obj->rect;
+			
+			if(temp_rect.w > temp_rect.h)
+			{
+			
+				temp_rect.x += (temp_rect.w/2);
+
+				temp_rect.w /= 2;
+			
+			}
+			else
+			{
+				temp_rect.y += (temp_rect.h/2);
+
+				temp_rect.h /= 2;
+
+			}
+
+			check = SDL_RenderTexture(win_obj->render,rect_obj->rect_text->text_texture->texture,NULL,&temp_rect);
+
+			if(!check)
+			{
+				ERR_MSG("[fill_rect]text_texture_texture: render failed",SDL_ERR);
+			}
+			
+		}
+
+		if(rect_obj->texture != NULL)
+		{
+
+			temp_rect = rect_obj->rect;
+			
+			if(temp_rect.w > temp_rect.h)
+			{
+
+				temp_rect.w /= 2;
+			}
+			else
+			{
+
+				temp_rect.h /= 2;
+			}
+
+			check = SDL_RenderTexture(win_obj->render,rect_obj->texture,NULL,&temp_rect);
+
+			if(!check)
+			{
+				ERR_MSG("[fill_rect]texture: render failed",SDL_ERR);
+			}
+		}
 
 		return;
 	}
 
 void exit_from_program(void)
 	{
-		if(main_win != NULL)
-			destroy_window_set_obj(&main_win);
-		if(info_win != NULL)
-			destroy_window_set_obj(&info_win);
-		if(log_win != NULL)
-			destroy_window_set_obj(&log_win);
+		destroy_window_set_obj(&main_win);
+			
+		destroy_window_set_obj(&info_win);
+			
+		destroy_window_set_obj(&log_win);
 		
 		destroy_rectwp(&top_bar);
 
