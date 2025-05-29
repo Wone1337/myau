@@ -14,6 +14,7 @@ RECTWP *file_space = NULL;
 RECTWP *delete_file_from_list = NULL;
 RECTWP *enc_dec_button = NULL;
 RECTWP *add_files_button = NULL;
+FILE_MAN file_container[FILE_BUF_SIZE];
 
 
 
@@ -369,6 +370,10 @@ void destroy_rectwp(RECTWP **rect_obj)
 		{
 			SDL_DestroySurface(obj->rect_text->text_texture->surface);
 		}
+
+
+		obj->rect_text->text_texture->dest_rect = (SDL_FRect){0,0,0,0};
+
 		
 		free(obj->rect_text->text_texture);
 		
@@ -385,6 +390,58 @@ void destroy_rectwp(RECTWP **rect_obj)
 		return;
 	}
 
+void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,const char *file_name)
+	{	
+		unsigned int counter = 0;
+
+		unsigned int gap_between_files = 10;
+
+		while(file_container[counter].is_busy == true && counter < FILE_BUF_SIZE)
+		{
+			counter++;
+		}
+
+		printf("hui = %u",counter);
+
+		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/cross.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf",file_name,60);
+
+		puts("HUYAMBA_start\n");
+
+		if(counter == 0)
+		{	
+			SDL_FRect temp_rect = rect_obj->rect;
+			
+			temp_rect.w -= 50;
+
+			temp_rect.h  = 25;
+
+			file_rect_obj->rect_text->text_texture->dest_rect = temp_rect;
+	
+			temp_rect.x += temp_rect.w;
+
+			temp_rect.w = rect_obj->rect.w - temp_rect.w;
+			
+			file_rect_obj->rect = temp_rect;
+			
+			puts("HUYAMBA\n");
+		}
+		else
+		{	
+			file_rect_obj->rect = file_container[counter-1].file_rect->rect; 
+			file_rect_obj->rect_text->text_texture->dest_rect = file_container[counter-1].file_rect->rect_text->text_texture->dest_rect;
+			file_rect_obj->rect.y += file_rect_obj->rect.h + gap_between_files;  
+			file_rect_obj->rect_text->text_texture->dest_rect.y += file_rect_obj->rect_text->text_texture->dest_rect.h + gap_between_files;
+		
+			
+			puts("HUYAMBA\n");
+		}
+
+		file_container[counter] = (FILE_MAN){file_rect_obj,true};  
+
+		puts("HUYAMBA\n");
+
+		return;
+	}
 
 void interface_appear(void)
 	{
@@ -462,7 +519,7 @@ void interface_appear(void)
 								
 
 
-			printf("d = %f e = %f\n\r",d,e);
+			//printf("d = %f e = %f\n\r",d,e);
 	
 
 			if(main_event.type == SDL_EVENT_KEY_DOWN)
@@ -532,12 +589,14 @@ puts("pisya\n");
 			}	
 		
 
-		//	if(main_event.type == SDL_EVENT_DROP_FILE)
-		//	{	
-		//		
-		//	//MEOW MEOW	
-		//	
-		//	}
+			if(main_event.type == SDL_EVENT_DROP_FILE)
+			{
+				
+				printf("HUI = %s\n",main_event.drop.data);
+				add_file(main_win,file_space,main_event.drop.data);
+				puts("HUYAMBA_end\n");
+			
+			}
 
 		}
 
@@ -560,6 +619,15 @@ puts("pisya\n");
 		fill_rect(main_win,enc_dec_button,enc_dec_button->main_color);	
 		
 		fill_rect(main_win,add_files_button,add_files_button->main_color);
+		
+		int s = 0;
+
+		while(file_container[s].is_busy == true)
+		{
+			SDL_RenderTexture(main_win->render,file_container[s].file_rect->texture,NULL,&file_container[s].file_rect->rect);
+			SDL_RenderTexture(main_win->render,file_container[s].file_rect->rect_text->text_texture->texture,NULL,&file_container[s].file_rect->rect_text->text_texture->dest_rect);
+			++s;
+		}
 		
 		//puts("pisya\n");
 	
@@ -610,8 +678,8 @@ puts("pisya\n");
 
 void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 	{
-		bool check;
-		SDL_FRect temp_rect;
+		//bool check;
+		//SDL_FRect temp_rect;
 
 	
 		SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
@@ -619,59 +687,59 @@ void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 		SDL_RenderFillRect(win_obj->render,&rect_obj->rect);
 
 
-		if(rect_obj->rect_text->text_texture->texture != NULL)
-		{	
-			
-			temp_rect = rect_obj->rect;
-			
-			if(temp_rect.w > temp_rect.h)
-			{
-			
-				temp_rect.x += (temp_rect.w/2);
+	//	if(rect_obj->rect_text->text_texture->texture != NULL)
+	//	{	
+	//		
+	//		temp_rect = rect_obj->rect;
+	//		
+	//		if(temp_rect.w > temp_rect.h)
+	//		{
+	//		
+	//			temp_rect.x += (temp_rect.w/2);
 
-				temp_rect.w /= 2;
-			
-			}
-			else
-			{
-				temp_rect.y += (temp_rect.h/2);
+	//			temp_rect.w /= 2;
+	//		
+	//		}
+	//		else
+	//		{
+	//			temp_rect.y += (temp_rect.h/2);
 
-				temp_rect.h /= 2;
+	//			temp_rect.h /= 2;
 
-			}
+	//		}
 
-			check = SDL_RenderTexture(win_obj->render,rect_obj->rect_text->text_texture->texture,NULL,&temp_rect);
+	//		check = SDL_RenderTexture(win_obj->render,rect_obj->rect_text->text_texture->texture,NULL,&temp_rect);
 
-			if(!check)
-			{
-				ERR_MSG("[fill_rect]text_texture_texture: render failed",SDL_ERR);
-			}
-			
-		}
+	//		if(!check)
+	//		{
+	//			ERR_MSG("[fill_rect]text_texture_texture: render failed",SDL_ERR);
+	//		}
+	//		
+	//	}
 
-		if(rect_obj->texture != NULL)
-		{
+	//	if(rect_obj->texture != NULL)
+	//	{
 
-			temp_rect = rect_obj->rect;
-			
-			if(temp_rect.w > temp_rect.h)
-			{
+	//		temp_rect = rect_obj->rect;
+	//		
+	//		if(temp_rect.w > temp_rect.h)
+	//		{
 
-				temp_rect.w /= 2;
-			}
-			else
-			{
+	//			temp_rect.w /= 2;
+	//		}
+	//		else
+	//		{
 
-				temp_rect.h /= 2;
-			}
+	//			temp_rect.h /= 2;
+	//		}
 
-			check = SDL_RenderTexture(win_obj->render,rect_obj->texture,NULL,&temp_rect);
+	//		check = SDL_RenderTexture(win_obj->render,rect_obj->texture,NULL,&temp_rect);
 
-			if(!check)
-			{
-				ERR_MSG("[fill_rect]texture: render failed",SDL_ERR);
-			}
-		}
+	//		if(!check)
+	//		{
+	//			ERR_MSG("[fill_rect]texture: render failed",SDL_ERR);
+	//		}
+	//	}
 
 		return;
 	}
@@ -705,6 +773,11 @@ void exit_from_program(void)
 		
 	//	puts("MEEEEEEEOW_HUIIIIII 5\n");
 		destroy_rectwp(&add_files_button);
+
+		for(unsigned int count = 0; file_container[count].is_busy; ++count)
+		{
+			destroy_rectwp(&file_container[count].file_rect);
+		}
 
 	//	puts("MEEEEEEEOW_HUIIIIII 6\n");
 		TTF_Quit();

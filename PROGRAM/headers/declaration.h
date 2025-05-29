@@ -95,8 +95,8 @@ typedef struct RECTWP
 
 typedef struct FILE_MAN
 	{
-		unsigned char *[FILE_BUF_SIZE];
-		RECTWP *file_appear;
+		RECTWP *file_rect;
+		bool is_busy;
 
 	} FILE_MAN;
 
@@ -117,11 +117,7 @@ extern RECTWP *file_space;
 extern RECTWP *delete_file_from_list;
 extern RECTWP *enc_dec_button;
 extern RECTWP *add_files_button;
-
-//VAR
-extern bool close_window_check;
-
-
+extern FILE_MAN file_container[];
 
 //_____________FUNCTIONS______________________
 void archivator_init(void);
@@ -133,6 +129,8 @@ WINDOW_SET * init_window_set_obj(WINDOW_SET*,CONFIG);
 void destroy_window_set_obj(WINDOW_SET**);
 //float linear_interpolation(float,float,float);
 void fill_rect(WINDOW_SET *,RECTWP *,RGBA);
+void add_file(WINDOW_SET*, RECTWP*,const char*);
+void delete_file(void);
 //void color_transition(RECTWP*,float);
 
 #endif
