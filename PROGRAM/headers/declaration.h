@@ -6,6 +6,7 @@
 #include "SDL3_ttf/SDL_ttf.h"
 #include "SDL3_image/SDL_image.h"
 #include <stdbool.h>
+#include <sys/stat.h>
 //#include <unistd.h>
 //#include <stdarg.h>
 
@@ -22,7 +23,7 @@ enum ERROR_MSG_MODE
 };
 
 //______________MACROS______________________
-#define ERR_MSG(MSG,ERROR_MODE) ( (ERROR_MODE) == SDL_ERR ? SDL_LogError(SDL_LOG_CATEGORY_ERROR,"%s: %s\n",(MSG),SDL_GetError()) : printf("%s\n",(MSG)))
+#define ERR_MSG(MSG,ERROR_MODE) ( (ERROR_MODE) == SDL_ERR ? SDL_LogError(SDL_LOG_CATEGORY_ERROR,"%s: %s\n",( MSG),SDL_GetError()) : printf("%s\n",(MSG) ) )
 				 
 //ERR_MSG(MSG,ERROR_MODE), where ERROR_MODE says us about a [CMN] - regular error output, and [SDL] - SDL error logs output
 
@@ -114,7 +115,6 @@ extern RECTWP *exit_button;
 extern RECTWP *info_button;
 extern RECTWP *log_button;
 extern RECTWP *file_space;
-extern RECTWP *delete_file_from_list;
 extern RECTWP *enc_dec_button;
 extern RECTWP *add_files_button;
 extern FILE_MAN file_container[];
@@ -127,10 +127,11 @@ RECTWP* create_rectwp(WINDOW_SET *,RGBA,char*,char*,char*,unsigned int);
 void destroy_rectwp(RECTWP **);
 WINDOW_SET * init_window_set_obj(WINDOW_SET*,CONFIG);
 void destroy_window_set_obj(WINDOW_SET**);
-//float linear_interpolation(float,float,float);
 void fill_rect(WINDOW_SET *,RECTWP *,RGBA);
-void add_file(WINDOW_SET*, RECTWP*,const char*);
-void delete_file(void);
-//void color_transition(RECTWP*,float);
-
+void add_file(WINDOW_SET*, RECTWP*, char*);
+void file_location_update(RECTWP *,RECTWP *, unsigned int);
+int render_file_container(WINDOW_SET *,RECTWP *);
+void change_scroll_offset(int *);
+void delete_file(FILE_MAN *,unsigned int *,unsigned int);
+void add_file_from_dialog(WINDOW_SET *,RECTWP *);
 #endif

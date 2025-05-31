@@ -1,5 +1,7 @@
 #include "../headers/declaration.h"
 #include "../headers/nfd.h"
+#include "../headers/huffman.h"
+#include "../headers/lz77.h"
 
 //________________VAR_INIT____________________
 SDL_Event main_event;
@@ -11,12 +13,18 @@ RECTWP *exit_button = NULL;
 RECTWP *info_button = NULL;
 RECTWP *log_button = NULL;
 RECTWP *file_space = NULL;
-RECTWP *delete_file_from_list = NULL;
 RECTWP *enc_dec_button = NULL;
 RECTWP *add_files_button = NULL;
 FILE_MAN file_container[FILE_BUF_SIZE];
 
+//____________LOCAL____________________
+#define ITEM_HEIGHT 30
 
+int file_scroll_offset = 0;
+unsigned int file_counter = 0;
+float d = 0, e = 0;
+const bool *key_state;
+unsigned int index_to_transfer = 0;
 
 //_____________FUNCTIONS_REALIZATION_________________
 void archivator_init(void)
@@ -45,15 +53,14 @@ void archivator_init(void)
 
 		top_bar = create_rectwp(main_win,(RGBA){255,64,0,1},NULL,NULL,NULL,0);
 		
-		exit_button = create_rectwp(main_win,(RGBA){78,54,234,1},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/cross.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf","Exit",500);
+		exit_button = create_rectwp(main_win,(RGBA){78,54,234,1},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf","Exit",500);
 
-		info_button = create_rectwp(main_win,(RGBA){78,54,234,1},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/info.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf","Info",500);
+		info_button = create_rectwp(main_win,(RGBA){78,54,234,1},"../PROGRAM/pic/info.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf","Info",500);
     		
-		log_button = create_rectwp(main_win,(RGBA){78,54,234,1},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/log.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf","Log",500);
+		log_button = create_rectwp(main_win,(RGBA){78,54,234,1},"../PROGRAM/pic/log.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf","Log",500);
 
 		file_space = create_rectwp(main_win,(RGBA){255,152,0,1},NULL,NULL,NULL,0);
-			
-		//delete_file_from_list = create_rectwp(255, 64, 0, 1,NULL,NULL,NULL,0);
+
   
 		add_files_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,NULL,NULL,0);
 		
@@ -390,56 +397,171 @@ void destroy_rectwp(RECTWP **rect_obj)
 		return;
 	}
 
-void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,const char *file_name)
+void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 	{	
-		unsigned int counter = 0;
+		unsigned int counter = 0x00;
+		
+		struct stat is_dir;
 
-		unsigned int gap_between_files = 10;
+		int check_is_dir = stat(file_name,&is_dir);
+
+		if(check_is_dir == 0 && S_ISDIR(is_dir.st_mode))
+		{
+			ERR_MSG("[add_file]check dir: file expected",CMN_ERR);
+			return;
+		}
 
 		while(file_container[counter].is_busy == true && counter < FILE_BUF_SIZE)
 		{
-			counter++;
+			++counter;
 		}
-
-		printf("hui = %u",counter);
-
-		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/pic/cross.svg","/home/Bobik/Документы/DIPLOMA_WORK/PROGRAM/fonts/ChivoMono-VariableFont_wght.ttf",file_name,60);
-
-		puts("HUYAMBA_start\n");
-
-		if(counter == 0)
-		{	
-			SDL_FRect temp_rect = rect_obj->rect;
-			
-			temp_rect.w -= 50;
-
-			temp_rect.h  = 25;
-
-			file_rect_obj->rect_text->text_texture->dest_rect = temp_rect;
-	
-			temp_rect.x += temp_rect.w;
-
-			temp_rect.w = rect_obj->rect.w - temp_rect.w;
-			
-			file_rect_obj->rect = temp_rect;
-			
-			puts("HUYAMBA\n");
-		}
-		else
-		{	
-			file_rect_obj->rect = file_container[counter-1].file_rect->rect; 
-			file_rect_obj->rect_text->text_texture->dest_rect = file_container[counter-1].file_rect->rect_text->text_texture->dest_rect;
-			file_rect_obj->rect.y += file_rect_obj->rect.h + gap_between_files;  
-			file_rect_obj->rect_text->text_texture->dest_rect.y += file_rect_obj->rect_text->text_texture->dest_rect.h + gap_between_files;
 		
-			
-			puts("HUYAMBA\n");
+		if(counter >= FILE_BUF_SIZE)
+		{
+			ERR_MSG("[add_file]file_container: array is overflow",CMN_ERR);
+			return;
 		}
+	
+		
+		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf",file_name,60);
+				
+		puts("HUYAMBA_start\n");
 
 		file_container[counter] = (FILE_MAN){file_rect_obj,true};  
 
+		++file_counter;
+
 		puts("HUYAMBA\n");
 
+		return;
+	}
+
+void add_file_from_dialog(WINDOW_SET *win_obj,RECTWP *rect_obj)
+	{
+			nfdpathset_t outpath;
+
+			nfdresult_t result = NFD_OpenDialogMultiple(NULL,NULL,&outpath);
+
+			if(result == NFD_ERROR)
+			{
+				puts("[add_file_from_dialog]outpath:");
+				ERR_MSG(NFD_GetError(),CMN_ERR);
+			}
+			else if(result == NFD_CANCEL)
+			{
+				puts("[add_file_from_dialog]outpath: file doesn't select from dialog\n");	
+			}
+
+			for(unsigned int yy = 0; yy < NFD_PathSet_GetCount(&outpath);++yy)
+			{
+				nfdchar_t *file_name =  NFD_PathSet_GetPath(&outpath,yy);
+				add_file(win_obj,rect_obj,file_name);
+			}
+
+			if(outpath.buf == NULL  && outpath.indices == 0)
+			{
+				NFD_PathSet_Free(&outpath);
+			}
+
+			return;
+	}
+
+int render_file_container(WINDOW_SET *win_obj,RECTWP *rect_obj)
+	{
+		int delete_file_index = -1;
+
+		int visible_items = rect_obj->rect.h / ITEM_HEIGHT;
+		
+		int max_scroll = file_counter - visible_items;
+
+		if(max_scroll < 0) 
+		{
+			max_scroll = 0;
+		}
+
+		if(file_scroll_offset < 0)
+		{		
+			file_scroll_offset = 0;
+		}
+
+		if (file_scroll_offset > max_scroll) 
+		{
+			file_scroll_offset = max_scroll;
+		}
+
+	
+		for (int i = 0; i < visible_items; ++i)
+		{
+			
+		    int index = file_scroll_offset + i;
+		    
+		    //printf("index = %d\n",index); 
+
+		    if (index >= file_counter)
+		    {
+			    break;
+		    }
+		
+		    //puts("SOS!\n");
+			
+		    float offsety = i * ITEM_HEIGHT;
+
+		
+
+		    if(file_container[index].file_rect)
+		    {
+			file_location_update(rect_obj,file_container[index].file_rect, offsety);
+		    	
+			SDL_RenderTexture(win_obj->render, file_container[index].file_rect->texture, NULL, &file_container[index].file_rect->rect);
+		    	
+			SDL_RenderTexture(win_obj->render, file_container[index].file_rect->rect_text->text_texture->texture, NULL, &file_container[index].file_rect->rect_text->text_texture->dest_rect);
+
+  		 	if(((file_container[index].file_rect->rect.x <= d) && (d <= file_container[index].file_rect->rect.x  + file_container[index].file_rect->rect.w ))  
+		        &&  ((file_container[index].file_rect->rect.y <= e) && (e <= file_container[index].file_rect->rect.y  + file_container[index].file_rect->rect.h)) )
+		    	{
+		        	delete_file_index = index;	
+		   	}
+
+		    }
+		
+		}	
+
+		return delete_file_index < 0 ? -1 : delete_file_index;
+
+	}
+
+void delete_file(FILE_MAN *file_obj,unsigned int *size , unsigned int index)
+	{	
+		destroy_rectwp(&file_obj->file_rect);
+
+		file_obj->is_busy = false;
+
+		file_obj = (file_obj + (*size-1) );
+		
+		--(*size);
+		
+		return;
+	}
+
+void file_location_update(RECTWP *rect_obj_src,RECTWP *rect_obj_dest,unsigned int offsety)
+	{	
+
+		rect_obj_dest->rect_text->text_texture->dest_rect.y = rect_obj_src->rect.y + offsety; 
+
+		rect_obj_dest->rect_text->text_texture->dest_rect.x = rect_obj_src->rect.x + 5;
+
+		rect_obj_dest->rect_text->text_texture->dest_rect.w = rect_obj_src->rect.w - 40;
+
+		rect_obj_dest->rect_text->text_texture->dest_rect.h = 25;
+
+		rect_obj_dest->rect.x = rect_obj_src->rect.x + rect_obj_src->rect.w - 25;
+
+		rect_obj_dest->rect.y = rect_obj_src->rect.y + offsety + 2;
+	
+		rect_obj_dest->rect.w = 20;
+
+		rect_obj_dest->rect.h = 25;
+		
 		return;
 	}
 
@@ -452,8 +574,7 @@ void interface_appear(void)
 		{
 			SDL_GetWindowSize(main_win->win,&main_win->cfg.w,&main_win->cfg.h);
 		}
-		//INTERFACE 
-
+	
 		if(main_win->cfg.w <= 854 || main_win->cfg.h <= 458)
 		{	
 				
@@ -471,6 +592,7 @@ void interface_appear(void)
 			enc_dec_button->rect.x = file_space->rect.x ,enc_dec_button->rect.y = file_space->rect.y + file_space->rect.h + gap ,enc_dec_button->rect.w = file_space->rect.w, enc_dec_button->rect.h = main_win->cfg.h/8;
 
 			add_files_button->rect.x = enc_dec_button->rect.x , add_files_button->rect.y = enc_dec_button->rect.y + enc_dec_button->rect.h + gap, add_files_button->rect.w = enc_dec_button->rect.w , add_files_button->rect.h = enc_dec_button->rect.h;
+
 			
 		}
 		else if(main_win->cfg.w <= 1920 || main_win->cfg.h <= 1080)
@@ -493,33 +615,14 @@ void interface_appear(void)
 
 
 		}
-	//	else if(cfg->w <= 1280 || cfg->h <= 1024)
-	//	{
-
-	//	}
-	//	else if(cfg->w <= 1600 || cfg->h <= 900)
-	//	{
-
-	//	}
-	//	else
-	//	{
-
-	//	}
-
-	
 	
 		
-		float d = 0;
-		float e = 0;
-		bool *key_state;
-
 		while(SDL_PollEvent(&main_event))
 		{
+
+			SDL_GetMouseState(&d,&e);
 			
-								
-
-
-			//printf("d = %f e = %f\n\r",d,e);
+			key_state = SDL_GetKeyboardState(NULL);
 	
 
 			if(main_event.type == SDL_EVENT_KEY_DOWN)
@@ -536,30 +639,75 @@ void interface_appear(void)
 					{
 						main_win->check = false;
 					}
-puts("pisya\n");
+
 					if(info_win && info_win->win && main_event.window.windowID == SDL_GetWindowID(info_win->win))
 					{
 						destroy_window_set_obj(&info_win);
 
 					}
-puts("pisya\n");
-					if(log_win && log_win->win &&main_event.window.windowID == SDL_GetWindowID(log_win->win))
+
+					if(log_win && log_win->win && main_event.window.windowID == SDL_GetWindowID(log_win->win))
 					{
 						destroy_window_set_obj(&log_win);		
 						
 					}
 
-puts("pisya\n");
 				}
+
+				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_I]))
+				{
+					if(info_win == NULL)
+					{
+						CONFIG info_cfg = {WIN_WIDTH,WIN_HEIGHT,"INFO WIN",0};
+						info_win = init_window_set_obj(info_win,info_cfg);
+					}
+
+				}
+
+				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_L]))
+				{
+					if(log_win == NULL)
+					{	
+						CONFIG log_cfg = {WIN_WIDTH,WIN_HEIGHT,"LOG WIN",0};
+						log_win = init_window_set_obj(log_win,log_cfg);
+					}	
+				}
+					
+				if((key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_C]))
+				{
+					for(unsigned int count = 0; file_container[count].is_busy == true; ++count)
+					{	
+
+						//printf("f_cnt= %d\n",file_counter);
+
+						//printf("f_rect = %p f_bool = %u\n",file_container[count].file_rect,file_container[count].is_busy);
+
+						delete_file(file_container,&file_counter,count);
+
+						printf("f_cnt= %d\n",file_counter);
+
+						//printf("f_rect = %p f_bool = %u\n",file_container[count].file_rect,file_container[count].is_busy);
+					}
+
+				}
+
+
 			
+			}
+
+			if(main_event.type == SDL_EVENT_MOUSE_WHEEL)
+			{
+							
+				if((main_event.window.windowID == SDL_GetWindowID(main_win->win) ) && ((file_space->rect.x <= d) && (d <= file_space->rect.w + file_space->rect.x))  &&  ( (file_space->rect.y <= e) && (e <= file_space->rect.h + file_space->rect.y )))
+				{
+					change_scroll_offset(&file_scroll_offset);					
+				}
 			}
 
 
 			if(main_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 			{
 				
-				SDL_GetMouseState(&d,&e);
-
 
 				if( ( (exit_button->rect.x <= d) && (d <= exit_button->rect.w + exit_button->rect.x))  &&  ( (exit_button->rect.y <= e) && (e <= exit_button->rect.h + exit_button->rect.y )))
 				{
@@ -583,8 +731,22 @@ puts("pisya\n");
 						CONFIG log_cfg = {WIN_WIDTH,WIN_HEIGHT,"LOG WIN",0};
 						log_win = init_window_set_obj(log_win,log_cfg);
 					}	
-				}		
+				}
 
+				if(index_to_transfer != -1)				
+				{		
+					delete_file(file_container,&file_counter,index_to_transfer);
+
+					printf("fc = %d\n",file_counter);
+				}
+
+				if(((add_files_button->rect.x <= d) && (d <= add_files_button->rect.w + add_files_button->rect.x))  &&  ( (add_files_button->rect.y <= e) && (e <= add_files_button->rect.h + add_files_button->rect.y)))
+				{
+					puts("MYAUUUUUU\n");
+
+					add_file_from_dialog(main_win,file_space);
+				}
+	
 
 			}	
 		
@@ -592,10 +754,8 @@ puts("pisya\n");
 			if(main_event.type == SDL_EVENT_DROP_FILE)
 			{
 				
-				printf("HUI = %s\n",main_event.drop.data);
-				add_file(main_win,file_space,main_event.drop.data);
-				puts("HUYAMBA_end\n");
-			
+				add_file(main_win,file_space,main_event.drop.data);	
+
 			}
 
 		}
@@ -619,21 +779,15 @@ puts("pisya\n");
 		fill_rect(main_win,enc_dec_button,enc_dec_button->main_color);	
 		
 		fill_rect(main_win,add_files_button,add_files_button->main_color);
-		
-		int s = 0;
+			
 
-		while(file_container[s].is_busy == true)
-		{
-			SDL_RenderTexture(main_win->render,file_container[s].file_rect->texture,NULL,&file_container[s].file_rect->rect);
-			SDL_RenderTexture(main_win->render,file_container[s].file_rect->rect_text->text_texture->texture,NULL,&file_container[s].file_rect->rect_text->text_texture->dest_rect);
-			++s;
-		}
-		
-		//puts("pisya\n");
+		index_to_transfer = render_file_container(main_win,file_space);
+
+
 	
-		// RENDER ALL OBJECT
+		
 		SDL_RenderPresent(main_win->render);
-		//SDL_Delay(16);
+	
 		
 		if(info_win && info_win->check && info_win->render)
 		{
@@ -648,38 +802,29 @@ puts("pisya\n");
 
 		}
 
-		//puts("pisya\n");
 
 		return;
 	}
 
-//float linear_interpolation(float color_first,float color_second,float trans_speed)
-//	{
-//		
-//		return color_first + (color_second - color_first) * trans_speed; 
-//	}
-//
-//void color_transition(RECTWP *rect_obj,float speed)
-//	{
-//		float r,g,b,a;
-//
-//		r = linear_interpolation(rect_obj->main_color.red,rect_obj->transition_color.red,speed);
-//		
-//		g = linear_interpolation(rect_obj->main_color.green,rect_obj->transition_color.green,speed);
-//
-//		b = linear_interpolation(rect_obj->main_color.blue,rect_obj->transition_color.blue,speed);
-// 
-//		a = linear_interpolation(rect_obj->main_color.alpha,rect_obj->transition_color.alpha,speed);
-//		
-//		rect_obj->main_color = (RGBA){r,g,b,a};
-//						
-//	}
+void change_scroll_offset(int *scroll_offset)
+	{
 
+		int y_scroll = main_event.wheel.y;
+    					
+		if (main_event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+		{
+			y_scroll = -y_scroll;
+		}
+					
+   		*scroll_offset -= y_scroll;
+					
+		return;
+
+	}
 
 void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 	{
-		//bool check;
-		//SDL_FRect temp_rect;
+	
 
 	
 		SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
@@ -746,38 +891,56 @@ void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 
 void exit_from_program(void)
 	{
+	
+		puts("HUI1\n");
+		
 		destroy_window_set_obj(&main_win);
 			
+		puts("HUI2\n");
 		destroy_window_set_obj(&info_win);
 			
+		puts("HUI3\n");
 		destroy_window_set_obj(&log_win);
 		
+		puts("HUI4\n");
 		destroy_rectwp(&top_bar);
 
+		puts("HUI5\n");
 		//puts("MEEEEEEEOW_HUIIIIII 1\n");
 
 		destroy_rectwp(&exit_button);
 		
+		puts("HUI6\n");
 	//	puts("MEEEEEEEOW_HUIIIIII 2\n");
 		destroy_rectwp(&info_button);
 		
+		puts("HUI7\n");
 	//	puts("MEEEEEEEOW_HUIIIIII 3\n");
 		destroy_rectwp(&log_button);
 		
+		puts("HUI8\n");
 		destroy_rectwp(&file_space);
 		
+		puts("HUI9\n");
 	//	puts("MEEEEEEEOW_HUIIIIII 4\n");
-		//destroy_rectwp(delete_file_from_list);
+		
 		
 		destroy_rectwp(&enc_dec_button);
 		
+		puts("HUI10\n");
 	//	puts("MEEEEEEEOW_HUIIIIII 5\n");
 		destroy_rectwp(&add_files_button);
 
+		puts("HUI_GO\n");	
+				
 		for(unsigned int count = 0; file_container[count].is_busy; ++count)
 		{
-			destroy_rectwp(&file_container[count].file_rect);
+			printf("cnt = %d file_counter_b = %u\n",count,file_container[count].is_busy);
+			delete_file(file_container,&file_counter,count);
 		}
+
+
+		puts("SOS\n");
 
 	//	puts("MEEEEEEEOW_HUIIIIII 6\n");
 		TTF_Quit();
