@@ -242,12 +242,20 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		}
 		
 		temp_object->rect_text->font = NULL;
+	
 		temp_object->rect_text->text = NULL;
-		temp_object->rect_text->title = title;
+		
+		if((temp_object->rect_text->title = title) != NULL)
+		{
+			temp_object->rect_text->title = strdup(title);
+		}
+
 		temp_object->rect_text->text_texture = NULL;
-		temp_object->rect_text->title_size = 0;
-		temp_object->rect_text->text_scale = 0;
-		//puts("HUYARA3\n");	
+		
+		temp_object->rect_text->title_size = title == NULL ? 0 : strlen(title);
+	
+		temp_object->rect_text->text_scale = text_scale;
+	
 
 		if(ttf_path != NULL)
 		{
@@ -344,9 +352,15 @@ void destroy_rectwp(RECTWP **rect_obj)
 			SDL_DestroyTexture(obj->texture);
 		}
 		
+		obj->texture = NULL;
+
+		if(obj->rect_text->title != NULL)
+		{
+			free(obj->rect_text->title );
+		}
 
 		obj->rect_text->title = NULL;
-		
+
 		obj->rect_text->title_size = 0;
 		
 		obj->rect_text->text_scale = 0;
@@ -373,10 +387,14 @@ void destroy_rectwp(RECTWP **rect_obj)
 			SDL_DestroyTexture(obj->rect_text->text_texture->texture);
 		}
 
+		obj->rect_text->text_texture->texture = NULL;
+
 		if(obj->rect_text->text_texture->surface != NULL)
 		{
 			SDL_DestroySurface(obj->rect_text->text_texture->surface);
 		}
+
+		obj->rect_text->text_texture->surface = NULL;
 
 
 		obj->rect_text->text_texture->dest_rect = (SDL_FRect){0,0,0,0};
@@ -399,8 +417,7 @@ void destroy_rectwp(RECTWP **rect_obj)
 
 void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 	{	
-		unsigned int counter = 0x00;
-		
+			
 		struct stat is_dir;
 
 		int check_is_dir = stat(file_name,&is_dir);
@@ -411,24 +428,19 @@ void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 			return;
 		}
 
-		while(file_container[counter].is_busy == true && counter < FILE_BUF_SIZE)
-		{
-			++counter;
-		}
-		
-		if(counter >= FILE_BUF_SIZE)
+
+		if(file_counter >= FILE_BUF_SIZE)
 		{
 			ERR_MSG("[add_file]file_container: array is overflow",CMN_ERR);
 			return;
 		}
 
-
+		//ПРОБЛЕМЫ	
 		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf",file_name,100);
 		
-
 		puts("HUYAMBA_start\n");
 
-		file_container[counter] = (FILE_MAN){file_rect_obj,true};  
+		file_container[file_counter] = (FILE_MAN){file_rect_obj,true};  
 
 		++file_counter;
 
@@ -453,9 +465,9 @@ void add_file_from_dialog(WINDOW_SET *win_obj,RECTWP *rect_obj)
 				puts("[add_file_from_dialog]outpath: file doesn't select from dialog\n");	
 			}
 
-			for(unsigned int yy = 0; yy < NFD_PathSet_GetCount(&outpath);++yy)
+			for(unsigned int count = 0; count < NFD_PathSet_GetCount(&outpath);++count)
 			{
-				nfdchar_t *file_name =  NFD_PathSet_GetPath(&outpath,yy);
+				nfdchar_t *file_name =  NFD_PathSet_GetPath(&outpath,count);
 				add_file(win_obj,rect_obj,file_name);
 			}
 
@@ -538,14 +550,27 @@ void delete_file(FILE_MAN file_obj[],unsigned int *size , unsigned int index)
 		
 		destroy_rectwp(&file_obj[index].file_rect);
 
-		//printf("rect = %p\n",file_obj->file_rect);	
+
 		
+		//printf("rect = %p\n",file_obj->file_rect);	
 		file_obj[index].is_busy = false;
 		
-		file_obj[index] = file_obj[*size-1];	
+		//printf("rect = %p\n",file_obj->file_rect);	
+
+		
+		//printf("rect = %p bool = %u\n",file_obj[index].file_rect,file_obj[index].is_busy);	
+		
+		file_obj[index] = file_obj[*size-1];
+
+		//printf("rect = %p bool = %u\n",file_obj[index].file_rect,file_obj[index].is_busy);	
 		
 		file_obj[*size-1].is_busy = false;
 		
+		file_obj[*size-1].file_rect = NULL;
+
+		printf("rect = %p bool = %u\n",file_obj[index].file_rect,file_obj[index].is_busy);	
+		
+		printf("rect = %p bool = %u\n",file_obj[*size-1].file_rect,file_obj[*size-1].is_busy);	
 		--(*size);
 		
 		return;
@@ -688,13 +713,9 @@ void interface_appear(void)
 					
 				if((key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_C]))
 				{
-					for(unsigned int count = 0; file_container[count].is_busy == true; ++count)
-					{	
-
-						delete_file(file_container,&file_counter,count);
-
-						printf("f_cnt= %d\n",file_counter);
-
+					while(file_container[0].is_busy == true)
+					{
+						delete_file(file_container,&file_counter,0);
 					}
 
 				}
@@ -706,7 +727,7 @@ void interface_appear(void)
 
 						//delete_file(file_container,&file_counter,count);
 
-						printf("f_cnt= %d pointer = %p str = %s\n",count,file_container[count].file_rect,file_container[count].file_rect->rect_text->title);
+						printf("f_cnt= %d bool = %u pointer = %p str = %s\n",count,file_container[count].is_busy,file_container[count].file_rect,file_container[count].file_rect->rect_text->title);
 
 					}
 				}	
@@ -785,11 +806,9 @@ void interface_appear(void)
 
 			if(main_event.type == SDL_EVENT_DROP_FILE)
 			{
-				
+								
 				add_file(main_win,file_space,main_event.drop.data);	
-
-				printf("%s\n",file_container[0].file_rect->rect_text->title);
-			
+				
 			}
 
 		}

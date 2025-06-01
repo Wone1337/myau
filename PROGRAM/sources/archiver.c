@@ -101,9 +101,9 @@ void create_directory_recursive(const char* path) {
 // Функция сжатия данных (LZ77 -> Huffman)
 uint8_t* compress_data(const uint8_t* data, size_t size, size_t* compressed_size) {
     // Создаем временные файлы для использования ваших функций
-    const char* temp_input = "temp_compress_input.tmp";
-    const char* temp_lz77 = "temp_lz77_output.tmp";
-    const char* temp_huffman = "temp_huffman_output.tmp";
+    const char* temp_input = "../PROGRAM/outputs/temp_compress_input.tmp";
+    const char* temp_lz77 = "../PROGRAM/outputs/temp_lz77_output.tmp";
+    const char* temp_huffman = "../PROGRAM/outputs/temp_huffman_output.tmp";
     
     // Записываем исходные данные
     if (!write_memory_to_file(temp_input, data, size)) {
@@ -137,9 +137,9 @@ uint8_t* compress_data(const uint8_t* data, size_t size, size_t* compressed_size
 // Функция декомпрессии данных (Huffman -> LZ77)
 uint8_t* decompress_data(const uint8_t* compressed_data, size_t compressed_size, size_t* original_size) {
     // Создаем временные файлы
-    const char* temp_huffman = "temp_decompress_huffman.tmp";
-    const char* temp_lz77 = "temp_decompress_lz77.tmp";
-    const char* temp_output = "temp_decompress_output.tmp";
+    const char* temp_huffman = "../PROGRAM/outputs/temp_decompress_huffman.tmp";
+    const char* temp_lz77 = "../PROGRAM/outputs/temp_decompress_lz77.tmp";
+    const char* temp_output = "../PROGRAM/outputs/temp_decompress_output.tmp";
     
     // Записываем сжатые данные
     if (!write_memory_to_file(temp_huffman, compressed_data, compressed_size)) {
