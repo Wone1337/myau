@@ -132,6 +132,6 @@ void add_file(WINDOW_SET*, RECTWP*, char*);
 void file_location_update(RECTWP *,RECTWP *, unsigned int);
 int render_file_container(WINDOW_SET *,RECTWP *);
 void change_scroll_offset(int *);
-void delete_file(FILE_MAN *,unsigned int *,unsigned int);
+void delete_file(FILE_MAN [],unsigned int *,unsigned int);
 void add_file_from_dialog(WINDOW_SET *,RECTWP *);
 #endif

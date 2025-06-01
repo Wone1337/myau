@@ -1,7 +1,6 @@
 #include "../headers/declaration.h"
 #include "../headers/nfd.h"
-#include "../headers/huffman.h"
-#include "../headers/lz77.h"
+#include "../headers/archiver.h"
 
 //________________VAR_INIT____________________
 SDL_Event main_event;
@@ -244,7 +243,7 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		
 		temp_object->rect_text->font = NULL;
 		temp_object->rect_text->text = NULL;
-		temp_object->rect_text->title = NULL;
+		temp_object->rect_text->title = title;
 		temp_object->rect_text->text_texture = NULL;
 		temp_object->rect_text->title_size = 0;
 		temp_object->rect_text->text_scale = 0;
@@ -325,9 +324,9 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 
 void destroy_rectwp(RECTWP **rect_obj)
 	{
-		if(rect_obj == NULL ||  *rect_obj == NULL)
+		if(rect_obj == NULL ||  (*rect_obj) == NULL)
 		{
-			
+			printf("rect = %p\n",rect_obj);	
 			puts("[destroy_rectwp]ZERO NOTICED\n");
 			return;
 		}
@@ -344,6 +343,7 @@ void destroy_rectwp(RECTWP **rect_obj)
 		{
 			SDL_DestroyTexture(obj->texture);
 		}
+		
 
 		obj->rect_text->title = NULL;
 		
@@ -421,10 +421,11 @@ void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 			ERR_MSG("[add_file]file_container: array is overflow",CMN_ERR);
 			return;
 		}
-	
+
+
+		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf",file_name,100);
 		
-		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf",file_name,60);
-				
+
 		puts("HUYAMBA_start\n");
 
 		file_container[counter] = (FILE_MAN){file_rect_obj,true};  
@@ -530,17 +531,29 @@ int render_file_container(WINDOW_SET *win_obj,RECTWP *rect_obj)
 
 	}
 
-void delete_file(FILE_MAN *file_obj,unsigned int *size , unsigned int index)
+void delete_file(FILE_MAN file_obj[],unsigned int *size , unsigned int index)
 	{	
-		destroy_rectwp(&file_obj->file_rect);
+		
+		//printf("rect = %p\n",file_obj->file_rect);	
+		
+		destroy_rectwp(&file_obj[index].file_rect);
 
-		file_obj->is_busy = false;
-
-		file_obj = (file_obj + (*size-1) );
+		//printf("rect = %p\n",file_obj->file_rect);	
+		
+		file_obj[index].is_busy = false;
+		
+		file_obj[index] = file_obj[*size-1];	
+		
+		file_obj[*size-1].is_busy = false;
 		
 		--(*size);
 		
 		return;
+	}
+
+void encode_files(void)
+	{
+
 	}
 
 void file_location_update(RECTWP *rect_obj_src,RECTWP *rect_obj_dest,unsigned int offsety)
@@ -678,19 +691,32 @@ void interface_appear(void)
 					for(unsigned int count = 0; file_container[count].is_busy == true; ++count)
 					{	
 
-						//printf("f_cnt= %d\n",file_counter);
-
-						//printf("f_rect = %p f_bool = %u\n",file_container[count].file_rect,file_container[count].is_busy);
-
 						delete_file(file_container,&file_counter,count);
 
 						printf("f_cnt= %d\n",file_counter);
 
-						//printf("f_rect = %p f_bool = %u\n",file_container[count].file_rect,file_container[count].is_busy);
 					}
 
 				}
 
+				if((key_state[SDL_SCANCODE_S]))
+				{		
+					for(unsigned int count = 0; file_container[count].is_busy == true; ++count)
+					{	
+
+						//delete_file(file_container,&file_counter,count);
+
+						printf("f_cnt= %d pointer = %p str = %s\n",count,file_container[count].file_rect,file_container[count].file_rect->rect_text->title);
+
+					}
+				}	
+
+				if( ( (key_state[SDL_SCANCODE_DOWN]) || (key_state[SDL_SCANCODE_UP])) && (main_event.window.windowID == SDL_GetWindowID(main_win->win)))
+				{	
+					main_event.wheel.y = key_state[SDL_SCANCODE_DOWN] ? -main_event.wheel.y : +main_event.wheel.y ;						
+						
+					change_scroll_offset(&file_scroll_offset);
+				}
 
 			
 			}
@@ -737,7 +763,7 @@ void interface_appear(void)
 				{		
 					delete_file(file_container,&file_counter,index_to_transfer);
 
-					printf("fc = %d\n",file_counter);
+					printf("fc = %d\n",index_to_transfer);
 				}
 
 				if(((add_files_button->rect.x <= d) && (d <= add_files_button->rect.w + add_files_button->rect.x))  &&  ( (add_files_button->rect.y <= e) && (e <= add_files_button->rect.h + add_files_button->rect.y)))
@@ -746,7 +772,13 @@ void interface_appear(void)
 
 					add_file_from_dialog(main_win,file_space);
 				}
-	
+
+				if(((enc_dec_button->rect.x <= d) && (d <= enc_dec_button->rect.w + enc_dec_button->rect.x))  &&  ( (enc_dec_button->rect.y <= e) && (e <= enc_dec_button->rect.h + enc_dec_button->rect.y)))
+				{
+
+								
+				}
+
 
 			}	
 		
@@ -756,6 +788,8 @@ void interface_appear(void)
 				
 				add_file(main_win,file_space,main_event.drop.data);	
 
+				printf("%s\n",file_container[0].file_rect->rect_text->title);
+			
 			}
 
 		}
@@ -811,7 +845,7 @@ void change_scroll_offset(int *scroll_offset)
 
 		int y_scroll = main_event.wheel.y;
     					
-		if (main_event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+		if(main_event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 		{
 			y_scroll = -y_scroll;
 		}
