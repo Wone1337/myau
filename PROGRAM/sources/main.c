@@ -1,5 +1,7 @@
 #include "../headers/declaration.h"
 
+
+
 int main([[maybe_unused]] int argc ,[[maybe_unused]] char *argv[])
 	{
 	
@@ -20,7 +22,7 @@ int main([[maybe_unused]] int argc ,[[maybe_unused]] char *argv[])
 		if(!SDL_SetWindowMinimumSize(main_win->win,WIN_WIDTH,WIN_HEIGHT))
 		{
 			ERR_MSG("[main]SET_MIN_WIN_SIZE: error on settin up",SDL_ERR);
-		}
+		}	
 		
 		while(main_win->check)
 		{

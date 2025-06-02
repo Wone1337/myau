@@ -6,11 +6,12 @@
 SDL_Event main_event;
 WINDOW_SET *main_win = NULL;
 WINDOW_SET *info_win = NULL;
-WINDOW_SET *log_win = NULL;
+RECTWP *archive_name_field_title = NULL;
+RECTWP *archive_name_field_input_rect = NULL;
 RECTWP *top_bar = NULL;
 RECTWP *exit_button = NULL;
 RECTWP *info_button = NULL;
-RECTWP *log_button = NULL;
+RECTWP *title_arch_name_field = NULL;
 RECTWP *file_space = NULL;
 RECTWP *enc_button = NULL;
 RECTWP *dec_button = NULL;
@@ -32,10 +33,27 @@ INPUT *archive_input_text_field = NULL;
 		//STRUCT NEED ? MAYBE
 
 //_____________FUNCTIONS_REALIZATION_________________
+
+void test_header_write_read() {
+    LZ77_Header original = {LZ77_MAGIC, 12345, 6789, 0xABCDEF};
+    
+    FILE *f = fopen("test_header.bin", "wb");
+    fwrite(&original, sizeof(LZ77_Header), 1, f);
+    fclose(f);
+    
+    LZ77_Header read_back;
+    f = fopen("test_header.bin", "rb");
+    fread(&read_back, sizeof(LZ77_Header), 1, f);
+    fclose(f);
+    
+    printf("Original magic: 0x%08X, Read: 0x%08X\n", original.magic, read_back.magic);
+}
+
 void archivator_init(void)
 	{	
-
-
+		
+		test_header_write_read();
+			
 		CONFIG main_cfg = {WIN_WIDTH,WIN_HEIGHT,TITLE_NAME,SDL_WINDOW_RESIZABLE};
 
 		if(SDL_GL_LoadLibrary(NULL) == true)
@@ -62,8 +80,6 @@ void archivator_init(void)
 
 		info_button = create_rectwp(main_win,(RGBA){78,54,234,1}, DEF_PIC_PATH "info.svg", DEF_FONT_PATH "PatrickHandSC-Regular.ttf","Info",500);
     		
-		log_button = create_rectwp(main_win,(RGBA){78,54,234,1}, DEF_PIC_PATH "log.svg", DEF_FONT_PATH "PatrickHandSC-Regular.ttf","Log",500);
-
 		file_space = create_rectwp(main_win,(RGBA){255,152,0,1},NULL,NULL,NULL,0);
 
 		add_files_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,NULL,NULL,0);
@@ -80,9 +96,6 @@ void archivator_init(void)
 WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
 	{
 		
-			
-		//puts("HUI1\n");
-
 		win_obj = (WINDOW_SET*)malloc(sizeof(WINDOW_SET));
 
 		if(win_obj == NULL)
@@ -97,7 +110,6 @@ WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
    		win_obj->check = false;
    		win_obj->cfg = cfg;
 
-		//puts("HUI2\n");
 
 		win_obj->win = SDL_CreateWindow(cfg.title,cfg.w,cfg.h,cfg.flags);
 
@@ -109,7 +121,6 @@ WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
 		}
 
 
-		//puts("HUI3\n");
 		
 		win_obj->cfg = cfg;
 
@@ -123,7 +134,6 @@ WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
 		}
 
 
-	//	puts("HUI4\n");
 
 		win_obj->engine = TTF_CreateRendererTextEngine(win_obj->render);
 		
@@ -136,7 +146,6 @@ WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
 
 		win_obj->check = true;
 
-		//puts("HUI5\n");
 
 		return win_obj;
 	}
@@ -155,41 +164,37 @@ void destroy_window_set_obj(WINDOW_SET **win_obj)
 		if(obj->engine != NULL)
 			TTF_DestroyRendererTextEngine(obj->engine);
 
-		//puts("HUYASIK1\n");
 		
 		if(obj->render != NULL)
 			SDL_DestroyRenderer(obj->render);
 	
 		
-	//	puts("HUYASIK2\n");
 		if(obj->win != NULL)
 			SDL_DestroyWindow(obj->win);
 
 		
-	//	puts("HUYASIK3\n");
 		obj->cfg = (CONFIG){0,0,NULL,0};
 		
-	//	puts("HUYASIK4\n");
+
 		
 		obj->engine = NULL;
 		
-	//	puts("HUYASIK5\n");
+
 
 		obj->render = NULL;
 	
 		
-	//	puts("HUYASIK6\n");
+
 		obj->win = NULL;
 
-		//puts("HUYASIK7\n");
+	
 		obj->check = false;
 
-	//	puts("HUYASIK8\n");
+	
 		free(obj);
 
 		*win_obj = NULL;
 	
-	//	puts("HUYASIK9\n");
 		return;
 	}
 
@@ -205,21 +210,18 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		}
 
 
-		//puts("HUYARA1\n");	
+	
 
 		temp_object->rect = (SDL_FRect){0,0,0,0};
 
-		//puts("HUYARA1.1\n");	
+	
 
 		temp_object->main_color = rgba;
 
-		temp_object->texture = NULL;
-		
-		//temp_object->current_color = rgba;
+		temp_object->texture = NULL;	
 
 		//temp_object->transition_color = (RGBA){temp_object->main_color.red+50,temp_object->main_color.green+50,temp_object->main_color.blue+50,temp_object->main_color.alpha};
-		//puts("HUYARA1.2\n");	
-
+	
 		if(texture_path != NULL)
 		{
 			temp_object->texture = IMG_LoadTexture(win_obj->render,texture_path);
@@ -236,7 +238,7 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		}
 	
 
-		//puts("HUYARA2\n");	
+		
 		
 		temp_object->rect_text = NULL;
 		
@@ -297,7 +299,7 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		
 		SDL_Color temp_color = (SDL_Color){0,0,0,0};
 
-		//puts("HUYARA4\n");	
+	
 
 		if(ttf_path != NULL && title != NULL)
 		{
@@ -333,8 +335,7 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		}
 
 	
-			//puts("HUYARA5\n");	
-
+		
 		return temp_object;
 	}
 
@@ -342,7 +343,7 @@ void destroy_rectwp(RECTWP **rect_obj)
 	{
 		if(rect_obj == NULL ||  (*rect_obj) == NULL)
 		{
-			printf("rect = %p\n",rect_obj);	
+			
 			puts("[destroy_rectwp]ZERO NOTICED\n");
 			return;
 		}
@@ -353,8 +354,7 @@ void destroy_rectwp(RECTWP **rect_obj)
 
 		obj->main_color = (RGBA){0,0,0,0};
 		
-		//obj->transition_color = (RGBA){0,0,0,0};
-		
+			
 		if(obj->texture != NULL)
 		{
 			SDL_DestroyTexture(obj->texture);
@@ -443,7 +443,7 @@ void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 			return;
 		}
 
-		//ПРОБЛЕМЫ	
+		
 		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0}, DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "PatrickHandSC-Regular.ttf",file_name,24);
 		
 		puts("HUYAMBA_start\n");
@@ -516,15 +516,13 @@ int render_file_container(WINDOW_SET *win_obj,RECTWP *rect_obj)
 			
 		    int index = file_scroll_offset + i;
 		    
-		    //printf("index = %d\n",index); 
-
+		   
 		    if (index >= file_counter)
 		    {
 			    break;
 		    }
 		
-		    //puts("SOS!\n");
-			
+				
 		    float offsety = i * ITEM_HEIGHT;
 
 		
@@ -554,24 +552,13 @@ int render_file_container(WINDOW_SET *win_obj,RECTWP *rect_obj)
 void delete_file(FILE_MAN file_obj[],unsigned int *size , unsigned int index)
 	{	
 		
-		//printf("rect = %p\n",file_obj->file_rect);	
-		
 		destroy_rectwp(&file_obj[index].file_rect);
-
-
-		
-		//printf("rect = %p\n",file_obj->file_rect);	
+	
 		file_obj[index].is_busy = false;
-		
-		//printf("rect = %p\n",file_obj->file_rect);	
-
-		
-		//printf("rect = %p bool = %u\n",file_obj[index].file_rect,file_obj[index].is_busy);	
 		
 		file_obj[index] = file_obj[*size-1];
 
-		//printf("rect = %p bool = %u\n",file_obj[index].file_rect,file_obj[index].is_busy);	
-		
+			
 		file_obj[*size-1].is_busy = false;
 		
 		file_obj[*size-1].file_rect = NULL;
@@ -587,6 +574,12 @@ void input_text_on(WINDOW_SET *win_obj,INPUT **text_obj)
 
 		(*text_obj) = (INPUT*)malloc(sizeof(INPUT));
 
+		(*text_obj)->font  = NULL ;
+
+		(*text_obj)->surface = NULL; 
+
+		(*text_obj)->texture = NULL;
+		
 		(*text_obj)->rect = (SDL_FRect){0,0,0,0};
 
 		if((*text_obj) == NULL)
@@ -613,43 +606,48 @@ void input_text_on(WINDOW_SET *win_obj,INPUT **text_obj)
 void input_text_off(WINDOW_SET *win_obj,INPUT **text_obj)
 	{
 
-		if(text_obj || (*text_obj))
+		if( text_obj == NULL || (*text_obj) == NULL)
 		{
 			puts("[input_text_off]NOTICED NULL\n");
 			return;
 		}
-
-		SDL_StopTextInput(win_obj->win);
 		
-		TTF_CloseFont((*text_obj)->font);
+		if(win_obj && win_obj->win)
+		{
+			SDL_StopTextInput(win_obj->win);
+		}
 
-		(*text_obj)->font = NULL;
+		if((*text_obj)->font != NULL)
+		{
+			TTF_CloseFont((*text_obj)->font);
+
+			(*text_obj)->font = NULL;
+
+		}
 
 		if((*text_obj)->texture != NULL)
 		{
 			SDL_DestroyTexture((*text_obj)->texture);
+			
+			(*text_obj)->texture = NULL;
+
 		}
 
-		(*text_obj)->texture = NULL;
-		
 		if((*text_obj)->surface != NULL)
 		{
 			SDL_DestroySurface((*text_obj)->surface);
-		}
+		
+			(*text_obj)->surface = NULL;
 
-		(*text_obj)->surface = NULL;
+		}
 		
 		(*text_obj)->rect = (SDL_FRect){0,0,0,0}; 
 		
 		free((*text_obj));
 		
-		puts("MYAU2.1\n");
 		(*text_obj) = NULL;
 
-		puts("MYAU2.2\n");
-		
-		text_obj = NULL;
-
+			
 		return;
 		
 	}
@@ -749,12 +747,18 @@ void encode_files(char * file_name)
 	
 			++counter;
    				     
-			++current_ptr; // переходим к следующему элементу массива указателей
-   		}
+			++current_ptr;    		
+		 }
+
    		 
-   		snprintf(fn, sizeof(fn), "%s%s%s", DEF_PATH_OUTPUT_TMP, file_name, ".myzip");
+   		snprintf(fn, sizeof(fn), "%s%s%s", DEF_PATH_OUTPUT_TMP, file_name, DEF_ZIP_NAME);
 
    		create_archive(fn, ptr, file_counter);
+
+		while(file_counter)
+		{
+			delete_file(file_container,&file_counter,file_counter-1);	
+		}
    		 
    		free(ptr);
     				
@@ -767,8 +771,19 @@ void decode_files(void)
 		{
 			return;
 		}
+		
 
-		extract_archive(file_container[0].file_rect->rect_text->title,"/");
+		while(file_counter)
+		{
+
+			
+			
+			extract_archive(file_container[file_counter-1].file_rect->rect_text->title,DEF_PATH_OUTPUT_TMP);
+			
+			delete_file(file_container,&file_counter,file_counter-1);
+			
+						
+		}
 
 		return;
 	}
@@ -793,8 +808,7 @@ void interface_appear(void)
 			exit_button->rect.x = top_bar->rect.x , exit_button->rect.y = top_bar->rect.y , exit_button->rect.w = 100 ,exit_button->rect.h = top_bar->rect.h ;
 
 			info_button->rect.x = top_bar->rect.x + exit_button->rect.w + gap , info_button->rect.y = top_bar->rect.y , info_button->rect.w = exit_button->rect.w,info_button->rect.h = top_bar->rect.h;
-			log_button->rect.x = info_button->rect.x + info_button->rect.w + gap, log_button->rect.y = top_bar->rect.y, log_button->rect.w = info_button->rect.w, log_button->rect.h = top_bar->rect.h; 
-
+		
 			file_space->rect.x = 30 ,file_space->rect.y = top_bar->rect.h+gap, file_space->rect.w = main_win->cfg.w-file_space->rect.x*2, file_space->rect.h = main_win->cfg.h-(main_win->cfg.h/2);
 
 			enc_button->rect.x = file_space->rect.x ,enc_button->rect.y = file_space->rect.y + file_space->rect.h + gap ,enc_button->rect.w = file_space->rect.w/2, enc_button->rect.h = main_win->cfg.h/8;
@@ -804,8 +818,16 @@ void interface_appear(void)
 			add_files_button->rect.x = enc_button->rect.x , add_files_button->rect.y = enc_button->rect.y + enc_button->rect.h + gap, add_files_button->rect.w = enc_button->rect.w + dec_button->rect.w + gap, add_files_button->rect.h = enc_button->rect.h;
 			
 			if(archive_name_field != NULL)
-			archive_name_field->rect.x = archive_name_field->rect.x ,archive_name_field->rect.y = file_space->rect.y + file_space->rect.h + gap ,archive_name_field->rect.w = file_space->rect.w/2, archive_name_field->rect.h = main_win->cfg.h/8;
+			{
+				archive_name_field->rect.x = archive_name_field->rect.x ,archive_name_field->rect.y = file_space->rect.y + file_space->rect.h + gap ,archive_name_field->rect.w = file_space->rect.w/2, archive_name_field->rect.h = main_win->cfg.h/8;
+			
+				//archive_name_field_input_rect
 
+				//archive_name_field_title
+
+			}
+
+		
 		}
 		else if(main_win->cfg.w <= 1920 || main_win->cfg.h <= 1080)
 		{
@@ -816,9 +838,6 @@ void interface_appear(void)
 			exit_button->rect.x = top_bar->rect.x , exit_button->rect.y = top_bar->rect.y , exit_button->rect.w = top_bar->rect.w ,exit_button->rect.h = 100;
 			
 			info_button->rect.x = top_bar->rect.x , info_button->rect.y = top_bar->rect.y + exit_button->rect.h + gap , info_button->rect.w = exit_button->rect.w, info_button->rect.h = exit_button->rect.h;
-			
-			log_button->rect.x = top_bar->rect.x, log_button->rect.y = info_button->rect.y + info_button->rect.h + gap, log_button->rect.w = info_button->rect.w, log_button->rect.h = info_button->rect.h; 
-
 			file_space->rect.x = top_bar->rect.w+gap ,file_space->rect.y = 30 ,file_space->rect.w = main_win->cfg.w-(main_win->cfg.w/3), file_space->rect.h = main_win->cfg.h-file_space->rect.y*2;
 
 			enc_button->rect.x = file_space->rect.x + file_space->rect.w + gap + gap,enc_button->rect.y = file_space->rect.y ,enc_button->rect.w = file_space->rect.w/3-gap, enc_button->rect.h = file_space->rect.h/3;
@@ -850,8 +869,7 @@ void interface_appear(void)
 
 				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_Q]))
 				{
-					puts("pisya\n");
-						
+											
 					if(main_win && main_win->win && main_event.window.windowID == SDL_GetWindowID(main_win->win))
 					{
 						main_win->check = false;
@@ -861,12 +879,6 @@ void interface_appear(void)
 					{
 						destroy_window_set_obj(&info_win);
 
-					}
-
-					if(log_win && log_win->win && main_event.window.windowID == SDL_GetWindowID(log_win->win))
-					{
-						destroy_window_set_obj(&log_win);		
-						
 					}
 
 				}
@@ -881,14 +893,7 @@ void interface_appear(void)
 
 				}
 
-				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_L]))
-				{
-					if(log_win == NULL)
-					{	
-						CONFIG log_cfg = {WIN_WIDTH,WIN_HEIGHT,"LOG WIN",0};
-						log_win = init_window_set_obj(log_win,log_cfg);
-					}	
-				}
+			
 					
 				if((key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_C]))
 				{
@@ -903,8 +908,6 @@ void interface_appear(void)
 				{		
 					for(unsigned int count = 0; file_container[count].is_busy == true; ++count)
 					{	
-
-						//delete_file(file_container,&file_counter,count);
 
 						printf("f_cnt= %d bool = %u pointer = %p str = %s\n",count,file_container[count].is_busy,file_container[count].file_rect,file_container[count].file_rect->rect_text->title);
 
@@ -926,22 +929,17 @@ void interface_appear(void)
 				if( (main_event.key.key == SDLK_RETURN) && (archive_name_field) && ((archive_name_field->rect.x <= d) && (d <= archive_name_field->rect.w + archive_name_field->rect.x))  &&  ( (archive_name_field->rect.y <= e) && (e <= archive_name_field->rect.h + archive_name_field->rect.y )))
 				{
 
-					puts("MYAU\n");
 					if(strlen(input_keyboard) > 0)
 					{
 
-						puts("MYAU1\n");
-						destroy_rectwp(&archive_name_field);
-							
-						puts("MYAU2\n");
-						
+						destroy_rectwp(&archive_name_field);	
+											
 						input_text_off(main_win,&archive_input_text_field);
 
 						encode_files(input_keyboard);
 						
-						puts("MYAU3\n");
-						//encode();
 						memset(&input_keyboard,0,sizeof(input_keyboard));
+					
 					}
 
 					
@@ -954,8 +952,11 @@ void interface_appear(void)
 
 			if(main_event.type == SDL_EVENT_TEXT_INPUT)
 			{
-				strncat(input_keyboard, main_event.text.text, sizeof(input_keyboard) - strlen(input_keyboard) - 1);
-				printf("str = %s\n",input_keyboard);
+				if(strlen(input_keyboard) <= 15)
+				{
+					strncat(input_keyboard, main_event.text.text, sizeof(input_keyboard) - strlen(input_keyboard) - 1);
+					printf("str = %s\n",input_keyboard);
+				}
 			}
 
 
@@ -988,26 +989,18 @@ void interface_appear(void)
 					}
 				}
 
-				if(((log_button->rect.x <= d) && (d <= log_button->rect.w + log_button->rect.x))  &&  ( (log_button->rect.y <= e) && (e <= log_button->rect.h + log_button->rect.y ))  )
-				{
-					if(log_win == NULL)
-					{	
-						CONFIG log_cfg = {WIN_WIDTH,WIN_HEIGHT,"LOG WIN",0};
-						log_win = init_window_set_obj(log_win,log_cfg);
-					}	
-				}
+			
 
 				if(index_to_transfer != -1)				
 				{		
 					delete_file(file_container,&file_counter,index_to_transfer);
 
-					printf("fc = %d\n",index_to_transfer);
+				
 				}
 
 				if(((add_files_button->rect.x <= d) && (d <= add_files_button->rect.w + add_files_button->rect.x))  &&  ( (add_files_button->rect.y <= e) && (e <= add_files_button->rect.h + add_files_button->rect.y)))
 				{
-					puts("MYAUUUUUU\n");
-
+				
 					add_file_from_dialog(main_win,file_space);
 				}
 
@@ -1015,6 +1008,9 @@ void interface_appear(void)
 				{
 												
 					archive_name_field = create_rectwp(main_win,(RGBA){65,76,198,1},NULL,NULL,NULL,0);
+					
+					//archive_name_field_title = create_rectwp(main_win,(RGBA){98,123,45,1},DEF_FONT_PATH "PatrickHandSC-Regular.ttf",NULL,"Введите имя файла:(для продолжения нажмите enter)",36);	
+					//archive_name_field_input_rect = create_rectwp(main_win,(RGBA){85,11,93,1},NULL,NULL,NULL,0);	
 					input_text_on(main_win,&archive_input_text_field);
 					
 				}
@@ -1022,7 +1018,7 @@ void interface_appear(void)
 				if(((dec_button->rect.x <= d) && (d <= dec_button->rect.w + dec_button->rect.x))  &&  ( (dec_button->rect.y <= e) && (e <= dec_button->rect.h + dec_button->rect.y)))
 				{
 					decode_files();	
-					puts("DECODE\n");
+				
 				}
 
 
@@ -1052,15 +1048,19 @@ void interface_appear(void)
 		
 		fill_rect(main_win,info_button,info_button->main_color);
 
-		fill_rect(main_win,log_button,log_button->main_color);
+		
 	
 		fill_rect(main_win,file_space,file_space->main_color);			
 		
 		fill_rect(main_win,enc_button,enc_button->main_color);
 		
-		if(archive_name_field != NULL)
+		if(archive_name_field != NULL && archive_name_field_input_rect != NULL && archive_name_field_title != NULL)
+		{
 			fill_rect(main_win,archive_name_field,archive_name_field->main_color);
-		
+			fill_rect(main_win,archive_name_field_input_rect,archive_name_field_input_rect->main_color);
+			fill_rect(main_win,archive_name_field_title,archive_name_field_title->main_color);
+		}
+
 		fill_rect(main_win,dec_button,enc_button->main_color);	
 		
 		fill_rect(main_win,add_files_button,add_files_button->main_color);
@@ -1078,13 +1078,6 @@ void interface_appear(void)
 		{
 			SDL_RenderClear(info_win->render);
 			SDL_RenderPresent(info_win->render);
-		}
-
-		if(log_win && log_win->check && log_win->render)
-		{
-			SDL_RenderClear(log_win->render);
-			SDL_RenderPresent(log_win->render);
-
 		}
 
 
@@ -1110,12 +1103,12 @@ void change_scroll_offset(int *scroll_offset)
 void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 	{
 	
-			if(rect_obj)
-			{
-				SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
+		if(rect_obj)
+		{
+			SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
 			
-				SDL_RenderFillRect(win_obj->render,&rect_obj->rect);
-			}
+			SDL_RenderFillRect(win_obj->render,&rect_obj->rect);
+		}
 	
 	//	if(rect_obj->rect_text->text_texture->texture != NULL)
 	//	{	
@@ -1177,62 +1170,40 @@ void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 void exit_from_program(void)
 	{
 	
-		puts("HUI1\n");
+		input_text_off(main_win,&archive_input_text_field);	
 		
 		destroy_window_set_obj(&main_win);
 			
-		puts("HUI2\n");
 		destroy_window_set_obj(&info_win);
 			
-		puts("HUI3\n");
-		destroy_window_set_obj(&log_win);
-		
-		puts("HUI4\n");
 		destroy_rectwp(&top_bar);
 
-		puts("HUI5\n");
-		//puts("MEEEEEEEOW_HUIIIIII 1\n");
-
 		destroy_rectwp(&exit_button);
-		
-		puts("HUI6\n");
-	//	puts("MEEEEEEEOW_HUIIIIII 2\n");
+
 		destroy_rectwp(&info_button);
 		
-		puts("HUI7\n");
-	//	puts("MEEEEEEEOW_HUIIIIII 3\n");
-		destroy_rectwp(&log_button);
-		
-		puts("HUI8\n");
 		destroy_rectwp(&file_space);
-		
-		puts("HUI9\n");
-	//	puts("MEEEEEEEOW_HUIIIIII 4\n");
-		
 		
 		destroy_rectwp(&enc_button);
 
 		destroy_rectwp(&dec_button);
 
 		destroy_rectwp(&archive_name_field);
-		
-		puts("HUI10\n");
-	//	puts("MEEEEEEEOW_HUIIIIII 5\n");
+
+		destroy_rectwp(&archive_name_field_title);
+
+		destroy_rectwp(&archive_name_field_input_rect);
+
 		destroy_rectwp(&add_files_button);
 
-		puts("HUI_GO\n");	
 				
 		for(unsigned int count = 0; file_container[count].is_busy; ++count)
 		{
-			printf("cnt = %d file_counter_b = %u\n",count,file_container[count].is_busy);
+			
 			delete_file(file_container,&file_counter,count);
 		}
 		
-		input_text_off(main_win,&archive_input_text_field);	
 
-		puts("SOS\n");
-
-	//	puts("MEEEEEEEOW_HUIIIIII 6\n");
 		TTF_Quit();
 
 		SDL_Quit();

@@ -7,8 +7,6 @@
 #include "SDL3_image/SDL_image.h"
 #include <stdbool.h>
 #include <sys/stat.h>
-//#include <unistd.h>
-//#include <stdarg.h>
 
 #if !defined(DECLARATION)
 #define DECLARATION
@@ -25,7 +23,6 @@ enum ERROR_MSG_MODE
 //______________MACROS______________________
 #define ERR_MSG(MSG,ERROR_MODE) ( (ERROR_MODE) == SDL_ERR ? SDL_LogError(SDL_LOG_CATEGORY_ERROR,"%s: %s\n",( MSG),SDL_GetError()) : printf("%s\n",(MSG) ) )
 				 
-//ERR_MSG(MSG,ERROR_MODE), where ERROR_MODE says us about a [CMN] - regular error output, and [SDL] - SDL error logs output
 
 //_____________DEFINES______________________
 #define TITLE_NAME "[NOTWI] [Alpha] ACHIVATOR [BUILD 1.0.0]"
@@ -34,7 +31,7 @@ enum ERROR_MSG_MODE
 
 #define WIN_HEIGHT 0x1E0
 
-#define FILE_BUF_SIZE 256
+#define FILE_BUF_SIZE 512
 
 #define ITEM_HEIGHT 30
 
@@ -44,7 +41,8 @@ enum ERROR_MSG_MODE
 
 #define DEF_FONT_PATH "../PROGRAM/fonts/"
 
-//#define DEF_OUPUT_PATH "../PROGRAM/outputs/"
+#define DEF_ZIP_NAME ".ntwzip"
+
 
 
 //_____________STRUCTURES_____________________
@@ -130,16 +128,16 @@ extern SDL_Event main_event;
 //CUSTOM
 extern WINDOW_SET *main_win;
 extern WINDOW_SET *info_win;
-extern WINDOW_SET *log_win;
 extern RECTWP *top_bar;
 extern RECTWP *exit_button;
 extern RECTWP *info_button;
-extern RECTWP *log_button;
 extern RECTWP *file_space;
 extern RECTWP *enc_button;
 extern RECTWP *dec_button;
 extern RECTWP *add_files_button;
 extern RECTWP *archive_name_field;
+extern RECTWP *archive_name_field_title;
+extern RECTWP *archive_name_field_input_rect;
 extern FILE_MAN file_container[];
 
 //_____________FUNCTIONS______________________

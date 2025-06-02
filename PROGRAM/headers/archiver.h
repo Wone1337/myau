@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "lz77.h"
-#include "huffman.h"
+#include "../headers/lz77.h"
+#include "../headers/huffman.h"
 
 
 #ifndef ARCHIVER_H
@@ -36,7 +36,6 @@ typedef struct {
 #define ARCHIVE_SIGNATURE "MYLZ77HF"
 #define ARCHIVE_END_SIGNATURE "ENDARCH!"
 #define DEF_PATH_OUTPUT_TMP "../PROGRAM/outputs/"
-#define DEF_PATH_OUTPUT "../PROGRAM/outputs"
 
 void init_crc32(void);
 uint32_t calculate_crc32(const uint8_t* data, size_t size);
@@ -53,3 +52,4 @@ uint8_t* compress_data(const uint8_t* data, size_t size, size_t* compressed_size
 uint8_t* decompress_data(const uint8_t* compressed_data, size_t compressed_size, size_t* original_size);
 
 #endif 
+
