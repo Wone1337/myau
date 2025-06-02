@@ -35,6 +35,8 @@ typedef struct {
 
 #define ARCHIVE_SIGNATURE "MYLZ77HF"
 #define ARCHIVE_END_SIGNATURE "ENDARCH!"
+#define DEF_PATH_OUTPUT_TMP "../PROGRAM/outputs/"
+#define DEF_PATH_OUTPUT "../PROGRAM/outputs"
 
 void init_crc32(void);
 uint32_t calculate_crc32(const uint8_t* data, size_t size);

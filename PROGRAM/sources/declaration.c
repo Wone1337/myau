@@ -12,18 +12,24 @@ RECTWP *exit_button = NULL;
 RECTWP *info_button = NULL;
 RECTWP *log_button = NULL;
 RECTWP *file_space = NULL;
-RECTWP *enc_dec_button = NULL;
+RECTWP *enc_button = NULL;
+RECTWP *dec_button = NULL;
 RECTWP *add_files_button = NULL;
+RECTWP *archive_name_field = NULL;
 FILE_MAN file_container[FILE_BUF_SIZE];
+INPUT *archive_input_text_field = NULL;
 
 //____________LOCAL____________________
-#define ITEM_HEIGHT 30
-
-int file_scroll_offset = 0;
-unsigned int file_counter = 0;
-float d = 0, e = 0;
-const bool *key_state;
-unsigned int index_to_transfer = 0;
+		
+		int file_scroll_offset;
+		unsigned int file_counter;
+		float d;
+		float e;
+		const bool *key_state;
+		unsigned int index_to_transfer;
+		char input_keyboard[SYMBOL_INPUT_BUF];
+		
+		//STRUCT NEED ? MAYBE
 
 //_____________FUNCTIONS_REALIZATION_________________
 void archivator_init(void)
@@ -52,18 +58,20 @@ void archivator_init(void)
 
 		top_bar = create_rectwp(main_win,(RGBA){255,64,0,1},NULL,NULL,NULL,0);
 		
-		exit_button = create_rectwp(main_win,(RGBA){78,54,234,1},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf","Exit",500);
+		exit_button = create_rectwp(main_win,(RGBA){78,54,234,1},DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "PatrickHandSC-Regular.ttf","Exit",500);
 
-		info_button = create_rectwp(main_win,(RGBA){78,54,234,1},"../PROGRAM/pic/info.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf","Info",500);
+		info_button = create_rectwp(main_win,(RGBA){78,54,234,1}, DEF_PIC_PATH "info.svg", DEF_FONT_PATH "PatrickHandSC-Regular.ttf","Info",500);
     		
-		log_button = create_rectwp(main_win,(RGBA){78,54,234,1},"../PROGRAM/pic/log.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf","Log",500);
+		log_button = create_rectwp(main_win,(RGBA){78,54,234,1}, DEF_PIC_PATH "log.svg", DEF_FONT_PATH "PatrickHandSC-Regular.ttf","Log",500);
 
 		file_space = create_rectwp(main_win,(RGBA){255,152,0,1},NULL,NULL,NULL,0);
 
-  
 		add_files_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,NULL,NULL,0);
 		
-		enc_dec_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,NULL,NULL,0);
+		enc_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,NULL,NULL,0);
+
+		dec_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,NULL,NULL,0);
+
 		
 	
 		return;
@@ -436,7 +444,7 @@ void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 		}
 
 		//ПРОБЛЕМЫ	
-		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0},"../PROGRAM/pic/cross.svg","../PROGRAM/fonts/PatrickHandSC-Regular.ttf",file_name,100);
+		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0}, DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "PatrickHandSC-Regular.ttf",file_name,24);
 		
 		puts("HUYAMBA_start\n");
 
@@ -568,17 +576,129 @@ void delete_file(FILE_MAN file_obj[],unsigned int *size , unsigned int index)
 		
 		file_obj[*size-1].file_rect = NULL;
 
-		printf("rect = %p bool = %u\n",file_obj[index].file_rect,file_obj[index].is_busy);	
-		
-		printf("rect = %p bool = %u\n",file_obj[*size-1].file_rect,file_obj[*size-1].is_busy);	
 		--(*size);
 		
 		return;
 	}
 
-void encode_files(void)
+void input_text_on(WINDOW_SET *win_obj,INPUT **text_obj)
+	{
+		SDL_StartTextInput(win_obj->win);
+
+		(*text_obj) = (INPUT*)malloc(sizeof(INPUT));
+
+		(*text_obj)->rect = (SDL_FRect){0,0,0,0};
+
+		if((*text_obj) == NULL)
+		{
+			ERR_MSG("[input_text_on]text_obj: create failed",CMN_ERR);
+			input_text_off(win_obj,text_obj);
+			return;
+
+		}
+		
+		(*text_obj)->font = TTF_OpenFont(DEF_FONT_PATH "PatrickHandSC-Regular.ttf",24);
+
+		if((*text_obj)->font == NULL)
+		{	
+			ERR_MSG("[input_text_on]font: create failed",SDL_ERR);
+			input_text_off(win_obj,text_obj);
+			return;
+		}
+		
+		return;
+		
+	}
+
+void input_text_off(WINDOW_SET *win_obj,INPUT **text_obj)
 	{
 
+		if(text_obj || (*text_obj))
+		{
+			puts("[input_text_off]NOTICED NULL\n");
+			return;
+		}
+
+		SDL_StopTextInput(win_obj->win);
+		
+		TTF_CloseFont((*text_obj)->font);
+
+		(*text_obj)->font = NULL;
+
+		if((*text_obj)->texture != NULL)
+		{
+			SDL_DestroyTexture((*text_obj)->texture);
+		}
+
+		(*text_obj)->texture = NULL;
+		
+		if((*text_obj)->surface != NULL)
+		{
+			SDL_DestroySurface((*text_obj)->surface);
+		}
+
+		(*text_obj)->surface = NULL;
+		
+		(*text_obj)->rect = (SDL_FRect){0,0,0,0}; 
+		
+		free((*text_obj));
+		
+		puts("MYAU2.1\n");
+		(*text_obj) = NULL;
+
+		puts("MYAU2.2\n");
+		
+		text_obj = NULL;
+
+		return;
+		
+	}
+
+void input_text_render(WINDOW_SET *win_obj,INPUT *text_obj,RECTWP *rect_obj,char *text)
+	{
+		if(text_obj == NULL)
+		{
+			return;
+		}
+		
+		text_obj->rect = rect_obj->rect;
+
+		if(text_obj->texture != NULL)
+		{
+			SDL_DestroyTexture(text_obj->texture);	
+		}
+
+		if(strlen(text) <= 0)
+		{
+			return;
+		}
+
+
+		text_obj->surface = TTF_RenderText_Blended_Wrapped(text_obj->font,text,strlen(text),(SDL_Color){0,0,0,0},200);
+
+		if(text_obj->surface == NULL)
+		{
+			ERR_MSG("[input_text_render]surface: create failed",SDL_ERR);
+			return;
+		}
+
+		text_obj->texture = SDL_CreateTextureFromSurface(win_obj->render,text_obj->surface);
+		
+	
+		if(text_obj->texture == NULL)
+		{
+			ERR_MSG("[input_text_render]texture: create failed",SDL_ERR);
+			return;
+		}
+
+
+		SDL_DestroySurface(text_obj->surface);
+
+		SDL_GetTextureSize(text_obj->texture,&text_obj->rect.w,&text_obj->rect.h);
+
+		SDL_RenderTexture(win_obj->render,text_obj->texture,NULL,&text_obj->rect);
+
+		return;
 	}
 
 void file_location_update(RECTWP *rect_obj_src,RECTWP *rect_obj_dest,unsigned int offsety)
@@ -587,10 +707,8 @@ void file_location_update(RECTWP *rect_obj_src,RECTWP *rect_obj_dest,unsigned in
 		rect_obj_dest->rect_text->text_texture->dest_rect.y = rect_obj_src->rect.y + offsety; 
 
 		rect_obj_dest->rect_text->text_texture->dest_rect.x = rect_obj_src->rect.x + 5;
-
-		rect_obj_dest->rect_text->text_texture->dest_rect.w = rect_obj_src->rect.w - 40;
-
-		rect_obj_dest->rect_text->text_texture->dest_rect.h = 25;
+		
+		SDL_GetTextureSize(rect_obj_dest->rect_text->text_texture->texture,&rect_obj_dest->rect_text->text_texture->dest_rect.w,&rect_obj_dest->rect_text->text_texture->dest_rect.h);
 
 		rect_obj_dest->rect.x = rect_obj_src->rect.x + rect_obj_src->rect.w - 25;
 
@@ -600,6 +718,58 @@ void file_location_update(RECTWP *rect_obj_src,RECTWP *rect_obj_dest,unsigned in
 
 		rect_obj_dest->rect.h = 25;
 		
+		return;
+	}
+
+void encode_files(char * file_name)
+	{
+		
+		if(file_counter <= 0)
+    		{
+        		return;
+    		}
+
+   		 char fn[150];
+   		 
+   		 char **ptr = malloc(file_counter * sizeof(char*));
+   		 
+		 if(ptr == NULL) 
+		 {
+   		     return;
+   		 }
+
+   		 char **current_ptr = ptr;
+
+   		 int counter = 0;
+
+   		 while(file_counter > counter)
+   		 {
+   		
+			*current_ptr = file_container[counter].file_rect->rect_text->title;
+	
+			++counter;
+   				     
+			++current_ptr; // переходим к следующему элементу массива указателей
+   		}
+   		 
+   		snprintf(fn, sizeof(fn), "%s%s%s", DEF_PATH_OUTPUT_TMP, file_name, ".myzip");
+
+   		create_archive(fn, ptr, file_counter);
+   		 
+   		free(ptr);
+    				
+		return;
+	}
+
+void decode_files(void)
+	{
+		if(file_counter <= 0)
+		{
+			return;
+		}
+
+		extract_archive(file_container[0].file_rect->rect_text->title,"/");
+
 		return;
 	}
 
@@ -627,11 +797,15 @@ void interface_appear(void)
 
 			file_space->rect.x = 30 ,file_space->rect.y = top_bar->rect.h+gap, file_space->rect.w = main_win->cfg.w-file_space->rect.x*2, file_space->rect.h = main_win->cfg.h-(main_win->cfg.h/2);
 
-			enc_dec_button->rect.x = file_space->rect.x ,enc_dec_button->rect.y = file_space->rect.y + file_space->rect.h + gap ,enc_dec_button->rect.w = file_space->rect.w, enc_dec_button->rect.h = main_win->cfg.h/8;
-
-			add_files_button->rect.x = enc_dec_button->rect.x , add_files_button->rect.y = enc_dec_button->rect.y + enc_dec_button->rect.h + gap, add_files_button->rect.w = enc_dec_button->rect.w , add_files_button->rect.h = enc_dec_button->rect.h;
-
+			enc_button->rect.x = file_space->rect.x ,enc_button->rect.y = file_space->rect.y + file_space->rect.h + gap ,enc_button->rect.w = file_space->rect.w/2, enc_button->rect.h = main_win->cfg.h/8;
 			
+			dec_button->rect.x = enc_button->rect.x + enc_button->rect.w + gap, dec_button->rect.y = enc_button->rect.y, dec_button->rect.w = enc_button->rect.w - gap, dec_button->rect.h = enc_button->rect.h;
+
+			add_files_button->rect.x = enc_button->rect.x , add_files_button->rect.y = enc_button->rect.y + enc_button->rect.h + gap, add_files_button->rect.w = enc_button->rect.w + dec_button->rect.w + gap, add_files_button->rect.h = enc_button->rect.h;
+			
+			if(archive_name_field != NULL)
+			archive_name_field->rect.x = archive_name_field->rect.x ,archive_name_field->rect.y = file_space->rect.y + file_space->rect.h + gap ,archive_name_field->rect.w = file_space->rect.w/2, archive_name_field->rect.h = main_win->cfg.h/8;
+
 		}
 		else if(main_win->cfg.w <= 1920 || main_win->cfg.h <= 1080)
 		{
@@ -647,9 +821,13 @@ void interface_appear(void)
 
 			file_space->rect.x = top_bar->rect.w+gap ,file_space->rect.y = 30 ,file_space->rect.w = main_win->cfg.w-(main_win->cfg.w/3), file_space->rect.h = main_win->cfg.h-file_space->rect.y*2;
 
-			enc_dec_button->rect.x = file_space->rect.x + file_space->rect.w + gap + gap ,enc_dec_button->rect.y = file_space->rect.y ,enc_dec_button->rect.w = file_space->rect.w/3-gap, enc_dec_button->rect.h = file_space->rect.h/2;
+			enc_button->rect.x = file_space->rect.x + file_space->rect.w + gap + gap,enc_button->rect.y = file_space->rect.y ,enc_button->rect.w = file_space->rect.w/3-gap, enc_button->rect.h = file_space->rect.h/3;
+			dec_button->rect.x = enc_button->rect.x , dec_button->rect.y = enc_button->rect.y + enc_button->rect.h + gap ,dec_button->rect.w = enc_button->rect.w,dec_button->rect.h = enc_button->rect.h -gap;
 
-			add_files_button->rect.x = enc_dec_button->rect.x, add_files_button->rect.y = enc_dec_button->rect.y+enc_dec_button->rect.h+gap, add_files_button->rect.w = enc_dec_button->rect.w , add_files_button->rect.h = enc_dec_button->rect.h-gap;
+			add_files_button->rect.x = dec_button->rect.x, add_files_button->rect.y = dec_button->rect.y+dec_button->rect.h+gap, add_files_button->rect.w = dec_button->rect.w , add_files_button->rect.h = dec_button->rect.h;
+		
+			if(archive_name_field != NULL)
+			archive_name_field->rect.x = file_space->rect.x + file_space->rect.w + gap + gap,archive_name_field->rect.y = file_space->rect.y ,archive_name_field->rect.w = file_space->rect.w/3-gap, archive_name_field->rect.h = file_space->rect.h/3;
 
 
 		}
@@ -661,7 +839,8 @@ void interface_appear(void)
 			SDL_GetMouseState(&d,&e);
 			
 			key_state = SDL_GetKeyboardState(NULL);
-	
+		
+
 
 			if(main_event.type == SDL_EVENT_KEY_DOWN)
 			{	
@@ -739,8 +918,46 @@ void interface_appear(void)
 					change_scroll_offset(&file_scroll_offset);
 				}
 
-			
+				if (main_event.key.key == SDLK_BACKSPACE && strlen(input_keyboard) > 0) 
+				{
+                        		input_keyboard[strlen(input_keyboard) - 1] = '\0';
+                    		}
+
+				if( (main_event.key.key == SDLK_RETURN) && (archive_name_field) && ((archive_name_field->rect.x <= d) && (d <= archive_name_field->rect.w + archive_name_field->rect.x))  &&  ( (archive_name_field->rect.y <= e) && (e <= archive_name_field->rect.h + archive_name_field->rect.y )))
+				{
+
+					puts("MYAU\n");
+					if(strlen(input_keyboard) > 0)
+					{
+
+						puts("MYAU1\n");
+						destroy_rectwp(&archive_name_field);
+							
+						puts("MYAU2\n");
+						
+						input_text_off(main_win,&archive_input_text_field);
+
+						encode_files(input_keyboard);
+						
+						puts("MYAU3\n");
+						//encode();
+						memset(&input_keyboard,0,sizeof(input_keyboard));
+					}
+
+					
+				}
+
+						
 			}
+
+			
+
+			if(main_event.type == SDL_EVENT_TEXT_INPUT)
+			{
+				strncat(input_keyboard, main_event.text.text, sizeof(input_keyboard) - strlen(input_keyboard) - 1);
+				printf("str = %s\n",input_keyboard);
+			}
+
 
 			if(main_event.type == SDL_EVENT_MOUSE_WHEEL)
 			{
@@ -794,11 +1011,21 @@ void interface_appear(void)
 					add_file_from_dialog(main_win,file_space);
 				}
 
-				if(((enc_dec_button->rect.x <= d) && (d <= enc_dec_button->rect.w + enc_dec_button->rect.x))  &&  ( (enc_dec_button->rect.y <= e) && (e <= enc_dec_button->rect.h + enc_dec_button->rect.y)))
+				if(((enc_button->rect.x <= d) && (d <= enc_button->rect.w + enc_button->rect.x))  &&  ( (enc_button->rect.y <= e) && (e <= enc_button->rect.h + enc_button->rect.y)))
 				{
-
-								
+												
+					archive_name_field = create_rectwp(main_win,(RGBA){65,76,198,1},NULL,NULL,NULL,0);
+					input_text_on(main_win,&archive_input_text_field);
+					
 				}
+
+				if(((dec_button->rect.x <= d) && (d <= dec_button->rect.w + dec_button->rect.x))  &&  ( (dec_button->rect.y <= e) && (e <= dec_button->rect.h + dec_button->rect.y)))
+				{
+					decode_files();	
+					puts("DECODE\n");
+				}
+
+
 
 
 			}	
@@ -829,14 +1056,19 @@ void interface_appear(void)
 	
 		fill_rect(main_win,file_space,file_space->main_color);			
 		
-		fill_rect(main_win,enc_dec_button,enc_dec_button->main_color);	
+		fill_rect(main_win,enc_button,enc_button->main_color);
+		
+		if(archive_name_field != NULL)
+			fill_rect(main_win,archive_name_field,archive_name_field->main_color);
+		
+		fill_rect(main_win,dec_button,enc_button->main_color);	
 		
 		fill_rect(main_win,add_files_button,add_files_button->main_color);
 			
 
 		index_to_transfer = render_file_container(main_win,file_space);
 
-
+		input_text_render(main_win,archive_input_text_field,enc_button,input_keyboard);
 	
 		
 		SDL_RenderPresent(main_win->render);
@@ -878,13 +1110,13 @@ void change_scroll_offset(int *scroll_offset)
 void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 	{
 	
-
-	
-		SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
+			if(rect_obj)
+			{
+				SDL_SetRenderDrawColor(win_obj->render,obj_color.red,obj_color.green,obj_color.blue,obj_color.alpha);
 			
-		SDL_RenderFillRect(win_obj->render,&rect_obj->rect);
-
-
+				SDL_RenderFillRect(win_obj->render,&rect_obj->rect);
+			}
+	
 	//	if(rect_obj->rect_text->text_texture->texture != NULL)
 	//	{	
 	//		
@@ -978,7 +1210,11 @@ void exit_from_program(void)
 	//	puts("MEEEEEEEOW_HUIIIIII 4\n");
 		
 		
-		destroy_rectwp(&enc_dec_button);
+		destroy_rectwp(&enc_button);
+
+		destroy_rectwp(&dec_button);
+
+		destroy_rectwp(&archive_name_field);
 		
 		puts("HUI10\n");
 	//	puts("MEEEEEEEOW_HUIIIIII 5\n");
@@ -991,7 +1227,8 @@ void exit_from_program(void)
 			printf("cnt = %d file_counter_b = %u\n",count,file_container[count].is_busy);
 			delete_file(file_container,&file_counter,count);
 		}
-
+		
+		input_text_off(main_win,&archive_input_text_field);	
 
 		puts("SOS\n");
 

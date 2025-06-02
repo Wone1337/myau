@@ -36,6 +36,17 @@ enum ERROR_MSG_MODE
 
 #define FILE_BUF_SIZE 256
 
+#define ITEM_HEIGHT 30
+
+#define SYMBOL_INPUT_BUF 1024
+
+#define DEF_PIC_PATH "../PROGRAM/pic/"
+
+#define DEF_FONT_PATH "../PROGRAM/fonts/"
+
+//#define DEF_OUPUT_PATH "../PROGRAM/outputs/"
+
+
 //_____________STRUCTURES_____________________
 typedef struct CONFIG	
 	{	
@@ -101,6 +112,16 @@ typedef struct FILE_MAN
 
 	} FILE_MAN;
 
+typedef struct INPUT_TEXT
+	{
+
+           SDL_FRect rect;
+	   SDL_Texture *texture;
+	   TTF_Font *font;
+	   SDL_Surface *surface;
+	   
+	} INPUT;
+
 //_______________DATA________________________
 
 //EVENT
@@ -115,8 +136,10 @@ extern RECTWP *exit_button;
 extern RECTWP *info_button;
 extern RECTWP *log_button;
 extern RECTWP *file_space;
-extern RECTWP *enc_dec_button;
+extern RECTWP *enc_button;
+extern RECTWP *dec_button;
 extern RECTWP *add_files_button;
+extern RECTWP *archive_name_field;
 extern FILE_MAN file_container[];
 
 //_____________FUNCTIONS______________________
@@ -134,4 +157,10 @@ int render_file_container(WINDOW_SET *,RECTWP *);
 void change_scroll_offset(int *);
 void delete_file(FILE_MAN [],unsigned int *,unsigned int);
 void add_file_from_dialog(WINDOW_SET *,RECTWP *);
+void encode_files(char *);
+void decode_files(void);
+void input_text_on(WINDOW_SET *,INPUT **);
+void input_text_off(WINDOW_SET *,INPUT **);
+void input_text_render(WINDOW_SET *,INPUT *,RECTWP *,char *);
+
 #endif
