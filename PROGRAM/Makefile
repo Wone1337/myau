@@ -6,8 +6,14 @@ OPTIONS = -std=c23 -Wall  -lSDL3 -lSDL3_ttf -lSDL3_image `pkg-config --cflags --
 
 BUILD_DIR = build/
 
+CURRENT_LOG_TIME := $(shell date +'%Y-%m-%d_%H-%M-%S')
+
+CURRENT_LOG_NAME = app_execution_$(CURRENT_LOG_TIME).log
+
+LOG_DIR = logs/
+
 app_build:
 		$(COMPILER) -o $(BUILD_DIR)arch_app  $(SOURCES) $(OPTIONS) 
 
 app_execute:
-		./$(BUILD_DIR)arch_app
+		./$(BUILD_DIR)arch_app 1> $(LOG_DIR)$(CURRENT_LOG_NAME)

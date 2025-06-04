@@ -23,6 +23,11 @@ int main([[maybe_unused]] int argc ,[[maybe_unused]] char *argv[])
 		{
 			ERR_MSG("[main]SET_MIN_WIN_SIZE: error on settin up",SDL_ERR);
 		}	
+
+		if(!SDL_SetWindowMaximumSize(main_win->win,854,600))
+		{
+			ERR_MSG("[main]SET_MAX_WIN_SIZE: error on settin up",SDL_ERR);
+		}
 		
 		while(main_win->check)
 		{

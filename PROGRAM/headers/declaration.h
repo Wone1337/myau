@@ -138,6 +138,7 @@ extern RECTWP *add_files_button;
 extern RECTWP *archive_name_field;
 extern RECTWP *archive_name_field_title;
 extern RECTWP *archive_name_field_input_rect;
+extern RECTWP *archive_name_field_cross;
 extern FILE_MAN file_container[];
 
 //_____________FUNCTIONS______________________
@@ -160,5 +161,6 @@ void decode_files(void);
 void input_text_on(WINDOW_SET *,INPUT **);
 void input_text_off(WINDOW_SET *,INPUT **);
 void input_text_render(WINDOW_SET *,INPUT *,RECTWP *,char *);
+
 
 #endif

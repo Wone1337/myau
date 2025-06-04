@@ -1,7 +1,16 @@
 #include "../headers/huffman.h"
 
-void build_canonical_codes(uint8_t *code_lengths, char **codes) {
-    // Сортируем символы по длинам кодов, затем по значению
+// Оптимизированная таблица декодирования
+static DecodeEntry decode_table[65536]; // 2^16 для быстрого поиска
+
+void build_decode_table(uint8_t *code_lengths) {
+    // Инициализация таблицы
+    for (int i = 0; i < 65536; i++) {
+        decode_table[i].symbol = 0xFFFF;
+        decode_table[i].length = 0;
+    }
+    
+    // Строим канонические коды
     uint16_t symbols[256];
     int symbol_count = 0;
     
@@ -11,7 +20,7 @@ void build_canonical_codes(uint8_t *code_lengths, char **codes) {
         }
     }
     
-    // Сортировка по длине, затем по символу
+    // Сортировка
     for (int i = 0; i < symbol_count - 1; i++) {
         for (int j = i + 1; j < symbol_count; j++) {
             uint16_t a = symbols[i], b = symbols[j];
@@ -23,7 +32,52 @@ void build_canonical_codes(uint8_t *code_lengths, char **codes) {
         }
     }
     
-    // Генерируем канонические коды
+    // Заполняем таблицу декодирования
+    int code = 0;
+    for (int i = 0; i < symbol_count; i++) {
+        uint16_t symbol = symbols[i];
+        int length = code_lengths[symbol];
+        
+        if (length <= 16) { // Ограничиваем длину для таблицы
+            // Заполняем все возможные префиксы
+            int prefix_count = 1 << (16 - length);
+            uint16_t base_code = code << (16 - length);
+            
+            for (int j = 0; j < prefix_count; j++) {
+                decode_table[base_code + j].symbol = symbol;
+                decode_table[base_code + j].length = length;
+            }
+        }
+        
+        code++;
+        if (i + 1 < symbol_count && code_lengths[symbols[i + 1]] > length) {
+            code <<= (code_lengths[symbols[i + 1]] - length);
+        }
+    }
+}
+
+void build_canonical_codes(uint8_t *code_lengths, char **codes) {
+    uint16_t symbols[256];
+    int symbol_count = 0;
+    
+    for (int i = 0; i < 256; i++) {
+        if (code_lengths[i] > 0) {
+            symbols[symbol_count++] = i;
+        }
+    }
+    
+    // Сортировка
+    for (int i = 0; i < symbol_count - 1; i++) {
+        for (int j = i + 1; j < symbol_count; j++) {
+            uint16_t a = symbols[i], b = symbols[j];
+            if (code_lengths[a] > code_lengths[b] || 
+                (code_lengths[a] == code_lengths[b] && a > b)) {
+                symbols[i] = b;
+                symbols[j] = a;
+            }
+        }
+    }
+    
     int code = 0;
     for (int i = 0; i < symbol_count; i++) {
         uint16_t symbol = symbols[i];
@@ -42,53 +96,70 @@ void build_canonical_codes(uint8_t *code_lengths, char **codes) {
     }
 }
 
-// Подсчет частот
 void count_frequencies(const uint8_t *data, size_t size, uint64_t *frequencies) {
-    for (int i = 0; i < 256; i++) {
-        frequencies[i] = 0;
+    // Обнуляем счетчики
+    memset(frequencies, 0, 256 * sizeof(uint64_t));
+    
+    // Оптимизированный подсчет по блокам
+    const uint8_t *end = data + size;
+    while (data + 8 <= end) {
+        frequencies[data[0]]++;
+        frequencies[data[1]]++;
+        frequencies[data[2]]++;
+        frequencies[data[3]]++;
+        frequencies[data[4]]++;
+        frequencies[data[5]]++;
+        frequencies[data[6]]++;
+        frequencies[data[7]]++;
+        data += 8;
     }
-    for (size_t i = 0; i < size; i++) {
-        frequencies[data[i]]++;
+    
+    // Оставшиеся байты
+    while (data < end) {
+        frequencies[*data++]++;
     }
 }
 
-// Построение дерева и получение длин кодов (упрощенная версия)
 void calculate_code_lengths(uint64_t *frequencies, uint8_t *code_lengths) {
-    // Инициализация
-    for (int i = 0; i < 256; i++) {
-        code_lengths[i] = 0;
-    }
+    memset(code_lengths, 0, 256);
     
-    // Простой алгоритм: длина обратно пропорциональна частоте
     uint64_t max_freq = 0;
+    int unique_symbols = 0;
+    
     for (int i = 0; i < 256; i++) {
-        if (frequencies[i] > max_freq) {
-            max_freq = frequencies[i];
+        if (frequencies[i] > 0) {
+            unique_symbols++;
+            if (frequencies[i] > max_freq) {
+                max_freq = frequencies[i];
+            }
         }
     }
     
     if (max_freq == 0) return;
     
+    // Улучшенный алгоритм расчета длин
     for (int i = 0; i < 256; i++) {
         if (frequencies[i] > 0) {
-            // Простая формула для длины кода
-            int length = 1;
-            uint64_t freq_ratio = max_freq / frequencies[i];
-            while (freq_ratio > 1 && length < 15) {
-                length++;
-                freq_ratio >>= 1;
+            if (unique_symbols == 1) {
+                code_lengths[i] = 1; // Единственный символ
+            } else {
+                // Логарифмический расчет
+                double prob = (double)frequencies[i] / max_freq;
+                int length = 1;
+                while (prob < 0.5 && length < 15) {
+                    length++;
+                    prob *= 2;
+                }
+                code_lengths[i] = length;
             }
-            code_lengths[i] = length;
         }
     }
 }
 
-// САМОДОСТАТОЧНОЕ сжатие Huffman
 int huffman_compress_file(const char *input_filename, const char *output_filename) {
     FILE *input = fopen(input_filename, "rb");
     if (!input) return -1;
     
-    // Читаем файл
     fseek(input, 0, SEEK_END);
     size_t file_size = ftell(input);
     fseek(input, 0, SEEK_SET);
@@ -101,7 +172,6 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
     }
     fclose(input);
     
-    // Подсчитываем частоты и строим коды
     uint64_t frequencies[256];
     count_frequencies(data, file_size, frequencies);
     
@@ -113,19 +183,19 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
     char *codes[256] = {NULL};
     build_canonical_codes(header.code_lengths, codes);
     
-    // Открываем выходной файл
     FILE *output = fopen(output_filename, "wb");
     if (!output) {
         free(data);
         return -1;
     }
     
-    // Записываем заголовок
     fwrite(&header, sizeof(Huffman_Header), 1, output);
     long compressed_start = ftell(output);
     
-    // Кодируем данные
-    uint8_t bit_buffer = 0;
+    // Буферизованное кодирование
+    uint8_t *bit_buffer = malloc(65536);
+    size_t buffer_pos = 0;
+    uint8_t current_byte = 0;
     int bit_count = 0;
     
     for (size_t i = 0; i < file_size; i++) {
@@ -133,14 +203,20 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
         if (code) {
             for (int j = 0; code[j] != '\0'; j++) {
                 if (code[j] == '1') {
-                    bit_buffer |= (1 << (7 - bit_count));
+                    current_byte |= (1 << (7 - bit_count));
                 }
                 bit_count++;
                 
                 if (bit_count == 8) {
-                    fwrite(&bit_buffer, 1, 1, output);
-                    bit_buffer = 0;
+                    bit_buffer[buffer_pos++] = current_byte;
+                    current_byte = 0;
                     bit_count = 0;
+                    
+                    // Сброс буфера при заполнении
+                    if (buffer_pos >= 65536) {
+                        fwrite(bit_buffer, 1, buffer_pos, output);
+                        buffer_pos = 0;
+                    }
                 }
             }
         }
@@ -148,10 +224,14 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
     
     // Записываем последний байт
     if (bit_count > 0) {
-        fwrite(&bit_buffer, 1, 1, output);
+        bit_buffer[buffer_pos++] = current_byte;
     }
     
-    // Обновляем размер
+    // Записываем оставшиеся данные
+    if (buffer_pos > 0) {
+        fwrite(bit_buffer, 1, buffer_pos, output);
+    }
+    
     long compressed_end = ftell(output);
     header.compressed_size = compressed_end - compressed_start;
     
@@ -160,8 +240,8 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
     
     fclose(output);
     free(data);
+    free(bit_buffer);
     
-    // Освобождение кодов
     for (int i = 0; i < 256; i++) {
         if (codes[i]) free(codes[i]);
     }
@@ -173,75 +253,71 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
     return 0;
 }
 
-// САМОДОСТАТОЧНОЕ декодирование Huffman
 int huffman_decompress_file(const char *input_filename, const char *output_filename) {
     FILE *input = fopen(input_filename, "rb");
     if (!input) return -1;
-    
-    // Читаем заголовок
+
     Huffman_Header header;
     if (fread(&header, sizeof(Huffman_Header), 1, input) != 1) {
         fclose(input);
         return -1;
     }
-    
+
     if (header.magic != HUFFMAN_MAGIC) {
         printf("Ошибка: неверный формат Huffman файла\n");
         fclose(input);
         return -1;
     }
-    
-    // Строим коды из длин
-    char *codes[256] = {NULL};
-    build_canonical_codes(header.code_lengths, codes);
-    
-    // Создаем обратную таблицу (код -> символ)
-    // Упрощенный декодер - читаем бит за битом
-    uint8_t *result = malloc(header.original_size);
-    size_t decoded = 0;
-    
-    char current_code[16] = {0};
-    int code_pos = 0;
-    
-    uint8_t byte;
-    while (fread(&byte, 1, 1, input) == 1 && decoded < header.original_size) {
-        for (int bit = 7; bit >= 0 && decoded < header.original_size; bit--) {
-            current_code[code_pos++] = ((byte >> bit) & 1) ? '1' : '0';
-            current_code[code_pos] = '\0';
-            
-            // Ищем совпадение
-            for (int i = 0; i < 256; i++) {
-                if (codes[i] && strcmp(codes[i], current_code) == 0) {
-                    result[decoded++] = i;
-                    code_pos = 0;
-                    current_code[0] = '\0';
-                    break;
+
+    // Строим таблицу декодирования
+    build_decode_table(header.code_lengths);
+
+    FILE *output = fopen(output_filename, "wb");
+    if (!output) {
+        fclose(input);
+        return -1;
+    }
+
+    uint8_t current_byte = 0;
+    int bit_position = 0;
+    uint16_t bit_buffer = 0;
+    int bits_in_buffer = 0;
+
+    size_t decompressed_size = 0;
+
+    while (fread(&current_byte, 1, 1, input) == 1) {
+        for (bit_position = 7; bit_position >= 0; bit_position--) {
+            bit_buffer = (bit_buffer << 1) | ((current_byte >> bit_position) & 1);
+            bits_in_buffer++;
+
+            if (bits_in_buffer >= 16) {
+                DecodeEntry entry = decode_table[bit_buffer >> (bits_in_buffer - 16)];
+                if (entry.length > 0) {
+                    fputc(entry.symbol, output);
+                    decompressed_size++;
+                    bits_in_buffer -= entry.length;
+                    bit_buffer &= (1 << bits_in_buffer) - 1; // Убираем использованные биты
                 }
-            }
-            
-            if (code_pos >= 15) { // Защита от переполнения
-                code_pos = 0;
-                current_code[0] = '\0';
             }
         }
     }
-    
-    // Записываем результат
-    FILE *output = fopen(output_filename, "wb");
-    if (output) {
-        fwrite(result, 1, decoded, output);
-        fclose(output);
+
+    // Проверяем оставшиеся биты
+    while (bits_in_buffer > 0) {
+        DecodeEntry entry = decode_table[bit_buffer << (16 - bits_in_buffer)];
+        if (entry.length > 0 && entry.length <= bits_in_buffer) {
+            fputc(entry.symbol, output);
+            decompressed_size++;
+            bits_in_buffer -= entry.length;
+            bit_buffer &= (1 << bits_in_buffer) - 1;
+        } else {
+            break; // Остались лишние биты
+        }
     }
-    
-    // Освобождение памяти
-    for (int i = 0; i < 256; i++) {
-        if (codes[i]) free(codes[i]);
-    }
-    free(result);
+
     fclose(input);
-    
-    printf("Huffman: декомпрессия завершена (%zu байт)\n", decoded);
+    fclose(output);
+
+    printf("Huffman: декомпрессия завершена (%zu байт)\n", decompressed_size);
     return 0;
 }
-
-
