@@ -31,11 +31,13 @@ INPUT *archive_input_text_field = NULL;
 		unsigned int index_to_transfer;
 		char input_keyboard[SYMBOL_INPUT_BUF];
 		
-		//STRUCT NEED ? MAYBE
+
 
 //_____________FUNCTIONS_REALIZATION_________________
 void archivator_init(void)
 	{	
+		
+		LOG_INFO("Инициализация архиватора");
 					
 		CONFIG main_cfg = {WIN_WIDTH,WIN_HEIGHT,TITLE_NAME,SDL_WINDOW_RESIZABLE};
 
@@ -49,13 +51,15 @@ void archivator_init(void)
 			main_cfg.flags |= SDL_WINDOW_VULKAN;
 		}
 		
+		LOG_INFO("Создание основного окна");
+
 		main_win = init_window_set_obj(main_win,main_cfg);
 
 		if(main_win == NULL)
 		{
         		ERR_MSG("[archivator_init]MAIN_WIN_INIT: create failed", CMN_ERR);
         		exit(0x01);
-    		}	
+    		}
 
 		top_bar = create_rectwp(main_win,(RGBA){255,64,0,1},NULL,NULL,NULL,0);
 		
@@ -65,19 +69,21 @@ void archivator_init(void)
     		
 		file_space = create_rectwp(main_win,(RGBA){255,152,0,1},NULL,NULL,NULL,0);
 
-		add_files_button = create_rectwp(main_win,(RGBA){46,204,113,1},DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Добавить файлы",36);
+		add_files_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Добавить файлы",36);
 		
-		enc_button = create_rectwp(main_win,(RGBA){46,204,113,1},DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Кодирование",36);
+		enc_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Кодирование",36);
 
-		dec_button = create_rectwp(main_win,(RGBA){46,204,113,1},DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Декодирование",36);
+		dec_button = create_rectwp(main_win,(RGBA){46,204,113,1},NULL,DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Декодирование",36);
 
 		
-	
+
 		return;
 	}
 
 WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
 	{
+
+		LOG_INFO("Инициализация окна");
 		
 		win_obj = (WINDOW_SET*)malloc(sizeof(WINDOW_SET));
 
@@ -140,9 +146,12 @@ WINDOW_SET* init_window_set_obj(WINDOW_SET *win_obj,CONFIG cfg)
 
 void destroy_window_set_obj(WINDOW_SET **win_obj)
 	{
+		LOG_INFO("Уничтожение окна");
+
 		if(win_obj == NULL || *win_obj == NULL)
 		{
-			puts("[destroy_window_set_obj]ZERO NOTICED\n");
+			
+			LOG_INFO("[destroy_window_set_obj]При удалении окна был замечен ноль: возврат");
 			return ;
 		}
 
@@ -188,6 +197,7 @@ void destroy_window_set_obj(WINDOW_SET **win_obj)
 
 RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf_path,char *title,unsigned int text_scale)
 	{
+		LOG_INFO("Создание элемента интерфейса окна");
 
 		RECTWP *temp_object = (RECTWP*)malloc(sizeof(RECTWP));
 
@@ -198,8 +208,6 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 		}
 
 
-	
-
 		temp_object->rect = (SDL_FRect){0,0,0,0};
 
 	
@@ -208,7 +216,6 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 
 		temp_object->texture = NULL;	
 
-		//temp_object->transition_color = (RGBA){temp_object->main_color.red+50,temp_object->main_color.green+50,temp_object->main_color.blue+50,temp_object->main_color.alpha};
 	
 		if(texture_path != NULL)
 		{
@@ -217,7 +224,6 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 
 			if(temp_object->texture == NULL)
 			{
-				//puts("HUYARA_ERR");	
 				ERR_MSG("[create_rectwp]TEXTURE: create failed",SDL_ERR);
 				destroy_rectwp(&temp_object);
 				return temp_object;
@@ -329,10 +335,13 @@ RECTWP *create_rectwp(WINDOW_SET *win_obj,RGBA rgba,char *texture_path,char *ttf
 
 void destroy_rectwp(RECTWP **rect_obj)
 	{
+		LOG_INFO("Уничтожение элемента интерфейса окна");
+
+
 		if(rect_obj == NULL ||  (*rect_obj) == NULL)
 		{
 			
-			puts("[destroy_rectwp]ZERO NOTICED\n");
+			LOG_INFO("[destroy_rectwp]При уничтожении элемента был обнаружен ноль: возврат");
 			return;
 		}
 		
@@ -413,6 +422,7 @@ void destroy_rectwp(RECTWP **rect_obj)
 
 void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 	{	
+		LOG_INFO("Добавление файла");
 			
 		struct stat is_dir;
 
@@ -434,31 +444,31 @@ void add_file(WINDOW_SET *win_obj,RECTWP *rect_obj,char *file_name)
 		
 		RECTWP *file_rect_obj = create_rectwp(win_obj,(RGBA){0,0,0,0}, DEF_PIC_PATH "cross.svg",DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf",file_name,24);
 		
-		puts("HUYAMBA_start\n");
-
 		file_container[file_counter] = (FILE_MAN){file_rect_obj,true};  
 
-		++file_counter;
-
-		puts("HUYAMBA\n");
+		++file_counter;	
 
 		return;
 	}
 
 void add_file_from_dialog(WINDOW_SET *win_obj,RECTWP *rect_obj)
 	{
+			LOG_INFO("Вызов диалогового окна для выбора файла");
+
 			nfdpathset_t outpath;
 
 			nfdresult_t result = NFD_OpenDialogMultiple(NULL,NULL,&outpath);
 
 			if(result == NFD_ERROR)
 			{
-				puts("[add_file_from_dialog]outpath:");
+				LOG_INFO("[add_file_from_dialog]outpath:");
 				ERR_MSG(NFD_GetError(),CMN_ERR);
+				return;
 			}
 			else if(result == NFD_CANCEL)
 			{
-				puts("[add_file_from_dialog]outpath: file doesn't select from dialog\n");	
+				LOG_INFO("[add_file_from_dialog]Отмена выбора файла: возврат");
+				return;
 			}
 
 			for(unsigned int count = 0; count < NFD_PathSet_GetCount(&outpath);++count)
@@ -539,7 +549,8 @@ int render_file_container(WINDOW_SET *win_obj,RECTWP *rect_obj)
 
 void delete_file(FILE_MAN file_obj[],unsigned int *size , unsigned int index)
 	{	
-		
+		LOG_INFO("Удаление файла");
+
 		destroy_rectwp(&file_obj[index].file_rect);
 	
 		file_obj[index].is_busy = false;
@@ -558,6 +569,8 @@ void delete_file(FILE_MAN file_obj[],unsigned int *size , unsigned int index)
 
 void input_text_on(WINDOW_SET *win_obj,INPUT **text_obj)
 	{
+		LOG_INFO("Включение режима ввода с клавиатуры");
+
 		SDL_StartTextInput(win_obj->win);
 
 		(*text_obj) = (INPUT*)malloc(sizeof(INPUT));
@@ -578,7 +591,7 @@ void input_text_on(WINDOW_SET *win_obj,INPUT **text_obj)
 
 		}
 		
-		(*text_obj)->font = TTF_OpenFont(DEF_FONT_PATH "PatrickHandSC-Regular.ttf",36);
+		(*text_obj)->font = TTF_OpenFont(DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf",36);
 
 		if((*text_obj)->font == NULL)
 		{	
@@ -593,10 +606,11 @@ void input_text_on(WINDOW_SET *win_obj,INPUT **text_obj)
 
 void input_text_off(WINDOW_SET *win_obj,INPUT **text_obj)
 	{
+		LOG_INFO("Выключение режима ввода с клавиатуры");
 
 		if( text_obj == NULL || (*text_obj) == NULL)
 		{
-			puts("[input_text_off]NOTICED NULL\n");
+			LOG_INFO("[input_text_off]При выключении ввода с клавиатуры был замечен ноль: возврат\n");
 			return;
 		}
 		
@@ -720,7 +734,8 @@ void file_location_update(RECTWP *rect_obj_src,RECTWP *rect_obj_dest,unsigned in
 
 void encode_files(char * file_name)
 	{
-		
+		LOG_INFO("Начало создание архива");	
+
 		if(file_counter <= 0)
     		{
         		return;
@@ -760,12 +775,17 @@ void encode_files(char * file_name)
 		}
    		 
    		free(ptr);
+
+		LOG_INFO("Конец создания архива");
+
     				
 		return;
 	}
 
 void decode_files(void)
 	{
+		LOG_INFO("Начало разархивации данных");
+
 		if(file_counter <= 0)
 		{
 			return;
@@ -775,14 +795,14 @@ void decode_files(void)
 		while(file_counter)
 		{
 
-			
-			
 			extract_archive(file_container[file_counter-1].file_rect->rect_text->title,DEF_PATH_OUTPUT_TMP);
-			
-			delete_file(file_container,&file_counter,file_counter-1);
-			
+						
+			delete_file(file_container,&file_counter,file_counter-1);		
 						
 		}
+
+		LOG_INFO("Конец разархивации данных");
+
 
 		return;
 	}
@@ -824,7 +844,7 @@ void interface_appear(void)
 
 				archive_name_field_input_rect->rect.x = file_space->rect.w/4 + gap + gap,archive_name_field_input_rect->rect.y = file_space->rect.h - (file_space->rect.h/4)  ,archive_name_field_input_rect->rect.w = file_space->rect.w/2 , archive_name_field_input_rect->rect.h = dec_button->rect.h;
 
-				//archive_name_field_cross->rect.x ,archive_name_field_cross->rect.x  ,archive_name_field_cross->rect.x ,archive_name_field_cross->rect.h =  ;
+				archive_name_field_cross->rect.x = file_space->rect.w,archive_name_field_cross->rect.y = file_space->rect.y ,archive_name_field_cross->rect.w = 30 ,archive_name_field_cross->rect.h = 30 ;
 
 
 			}
@@ -870,12 +890,16 @@ void interface_appear(void)
 
 			if(main_event.type == SDL_EVENT_KEY_DOWN)
 			{	
-				
+				LOG_INFO("Было замечено событие нажатие клавиши");
+
 				key_state = SDL_GetKeyboardState(NULL);
 	
 
 				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_Q]))
 				{
+					
+					LOG_INFO("LCTRL+Q");
+
 											
 					if(main_win && main_win->win && main_event.window.windowID == SDL_GetWindowID(main_win->win))
 					{
@@ -892,9 +916,11 @@ void interface_appear(void)
 
 				if( (key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_I]))
 				{
+					LOG_INFO("LCTRL+I");
+
 					if(info_win == NULL)
 					{
-						CONFIG info_cfg = {WIN_WIDTH,WIN_HEIGHT,"INFO WIN",0};
+						CONFIG info_cfg = {WIN_WIDTH,WIN_HEIGHT,"Окно информации",0};
 						info_win = init_window_set_obj(info_win,info_cfg);
 					}
 
@@ -904,6 +930,8 @@ void interface_appear(void)
 					
 				if((key_state[SDL_SCANCODE_LCTRL]) && (key_state[SDL_SCANCODE_C]))
 				{
+					LOG_INFO("LCTRL+C");
+	
 					while(file_container[0].is_busy == true)
 					{
 						delete_file(file_container,&file_counter,0);
@@ -911,18 +939,11 @@ void interface_appear(void)
 
 				}
 
-				if((key_state[SDL_SCANCODE_S]))
-				{		
-					for(unsigned int count = 0; file_container[count].is_busy == true; ++count)
-					{	
-
-						printf("f_cnt= %d bool = %u pointer = %p str = %s\n",count,file_container[count].is_busy,file_container[count].file_rect,file_container[count].file_rect->rect_text->title);
-
-					}
-				}	
 
 				if( ( (key_state[SDL_SCANCODE_DOWN]) || (key_state[SDL_SCANCODE_UP])) && (main_event.window.windowID == SDL_GetWindowID(main_win->win)))
-				{	
+				{
+					LOG_INFO("ARROW DOWN OR ARROW UP");
+
 					main_event.wheel.y = key_state[SDL_SCANCODE_DOWN] ? -main_event.wheel.y : +main_event.wheel.y ;						
 						
 					change_scroll_offset(&file_scroll_offset);
@@ -930,29 +951,39 @@ void interface_appear(void)
 
 				if (main_event.key.key == SDLK_BACKSPACE && strlen(input_keyboard) > 0) 
 				{
-                        		input_keyboard[strlen(input_keyboard) - 1] = '\0';
+					
+					LOG_INFO("BACKSPACE");
+
+					unsigned int size = strlen(input_keyboard);
+
+					if((input_keyboard[size -1] >= 32) && (input_keyboard[size -1] <= 126))
+                        		{
+						input_keyboard[size-1] = '\0';
+					}
+					else
+					{
+						input_keyboard[size-1] = '\0';
+						input_keyboard[size-2] = '\0';
+					}
+
+
                     		}
 
 				if( (main_event.key.key == SDLK_RETURN) && (archive_name_field))
 				{
+					
+					LOG_INFO("ENTER");
 
 					if(strlen(input_keyboard) > 0)
 					{
 
 						destroy_rectwp(&archive_name_field);
-
 						destroy_rectwp(&archive_name_field_input_rect);
-
 						destroy_rectwp(&archive_name_field_title);
-						
-						destroy_rectwp(&archive_name_field_cross);
-											
+						destroy_rectwp(&archive_name_field_cross);					
 						input_text_off(main_win,&archive_input_text_field);
-
 						encode_files(input_keyboard);
-						
 						memset(&input_keyboard,0,sizeof(input_keyboard));
-					
 					}
 
 					
@@ -965,16 +996,18 @@ void interface_appear(void)
 
 			if(main_event.type == SDL_EVENT_TEXT_INPUT)
 			{
-				if(strlen(input_keyboard) <= 15)
+				if(strlen(input_keyboard) <= 20)
 				{
 					strncat(input_keyboard, main_event.text.text, sizeof(input_keyboard) - strlen(input_keyboard) - 1);
-					printf("str = %s\n",input_keyboard);
+					
+					printf("Имя файла = %s\n",input_keyboard);
 				}
 			}
 
 
 			if(main_event.type == SDL_EVENT_MOUSE_WHEEL)
 			{
+				LOG_INFO("Было замечено событие прокрутки колеса мыши");
 							
 				if((main_event.window.windowID == SDL_GetWindowID(main_win->win) ) && ((file_space->rect.x <= d) && (d <= file_space->rect.w + file_space->rect.x))  &&  ( (file_space->rect.y <= e) && (e <= file_space->rect.h + file_space->rect.y )))
 				{
@@ -985,7 +1018,8 @@ void interface_appear(void)
 
 			if(main_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 			{
-				
+
+				LOG_INFO("Было замечено событие нажатие кнопки мыши или тачпада");
 
 				if( ( (exit_button->rect.x <= d) && (d <= exit_button->rect.w + exit_button->rect.x))  &&  ( (exit_button->rect.y <= e) && (e <= exit_button->rect.h + exit_button->rect.y )))
 				{
@@ -997,7 +1031,7 @@ void interface_appear(void)
 				{
 					if(info_win == NULL)
 					{
-						CONFIG info_cfg = {WIN_WIDTH,WIN_HEIGHT,"INFO WIN",0};
+						CONFIG info_cfg = {WIN_WIDTH,WIN_HEIGHT,"Окно информации",0};
 						info_win = init_window_set_obj(info_win,info_cfg);
 					}
 				}
@@ -1023,7 +1057,7 @@ void interface_appear(void)
 					archive_name_field = create_rectwp(main_win,(RGBA){65,76,198,1},NULL,NULL,NULL,0);
 					archive_name_field_title = create_rectwp(main_win,(RGBA){98,123,45,1},NULL,DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf","Введите название файла:",24);	
 					archive_name_field_input_rect = create_rectwp(main_win,(RGBA){85,11,93,1},NULL,NULL,NULL,0);
-					//archive_name_field_cross = create_rectwp(main_win,(RGBA){255,255,93,1},DEF_PIC_PATH "cross.svg",NULL,NULL,0);
+					archive_name_field_cross = create_rectwp(main_win,(RGBA){255,255,255,1},DEF_PIC_PATH "cross.svg",NULL,NULL,0);
 					input_text_on(main_win,&archive_input_text_field);
 					
 				}
@@ -1034,7 +1068,16 @@ void interface_appear(void)
 				
 				}
 
+				if((archive_name_field_cross) && ((archive_name_field_cross->rect.x <= d) && (d <= archive_name_field_cross->rect.w + archive_name_field_cross->rect.x))  &&  ( (archive_name_field_cross->rect.y <= e) && (e <= archive_name_field_cross->rect.h + archive_name_field_cross->rect.y)))
+				{
+					destroy_rectwp(&archive_name_field);
+					destroy_rectwp(&archive_name_field_input_rect);
+					destroy_rectwp(&archive_name_field_title);
+					destroy_rectwp(&archive_name_field_cross);					
+					input_text_off(main_win,&archive_input_text_field);
+					memset(&input_keyboard,0,sizeof(input_keyboard));
 
+				}
 
 
 			}	
@@ -1042,7 +1085,8 @@ void interface_appear(void)
 
 			if(main_event.type == SDL_EVENT_DROP_FILE)
 			{
-								
+				LOG_INFO("Было замечено событие drag-and-drop");
+
 				add_file(main_win,file_space,main_event.drop.data);	
 				
 			}
@@ -1072,37 +1116,108 @@ void interface_appear(void)
 
 		index_to_transfer = render_file_container(main_win,file_space);
 
-		if(archive_name_field != NULL && archive_name_field_input_rect != NULL && archive_name_field_title != NULL)
+		if(archive_name_field != NULL)
 		{
 			fill_rect(main_win,archive_name_field,archive_name_field->main_color);
 			fill_rect(main_win,archive_name_field_input_rect,archive_name_field_input_rect->main_color);
 			fill_rect(main_win,archive_name_field_title,archive_name_field_title->main_color);
+			fill_rect(main_win,archive_name_field_cross,archive_name_field_cross->main_color);
 			input_text_render(main_win,archive_input_text_field,archive_name_field_input_rect,input_keyboard);
 		}
 
 
-		//input_text_render(main_win,archive_input_text_field,archive_name_field_input_rect,input_keyboard);
-	
 		
 		SDL_RenderPresent(main_win->render);
 	
 		
 		if(info_win && info_win->check && info_win->render)
 		{
-
-			SDL_SetRenderDrawColor(info_win->render,255,255,255,0);
-			SDL_RenderClear(info_win->render);
-
-
-			SDL_RenderPresent(info_win->render);
+			
+			info_win_render();
+		
 		}
 
 
 		return;
 	}
 
+void info_win_render(void)
+	{
+		if (!info_win || !info_win->check || !info_win->render)
+		{
+			return;
+		}
+
+   		SDL_SetRenderDrawColor(info_win->render, 255, 255, 255, 1);
+   		
+		SDL_RenderClear(info_win->render);
+
+		char* logo_path = DEF_PIC_PATH "logo.svg"; 
+
+   		SDL_Texture* logo_texture = IMG_LoadTexture(info_win->render, logo_path);
+   		 
+		int logo_w = 200;
+   		 
+		int logo_h = 200;
+   		 
+		SDL_FRect logo_rect = {(info_win->cfg.w - logo_w) / 2, 30, logo_w,  logo_h };
+   		 
+		if (logo_texture != NULL)
+   		{
+			SDL_RenderTexture(info_win->render, logo_texture, NULL, &logo_rect);
+   		     
+			SDL_DestroyTexture(logo_texture);
+   		}
+
+   	   	char* info_text = 
+   		     "Название программы: NOTWI ARCHIVATOR\n"
+   		     "Версия: [Beta] 2.5.0\n"
+   		     "Разработчик: Моисеев Стеан ИСП-211\n"
+   		     "Описание:\n"
+   		     "Это программа позволяет архивировать,\n"
+   		     "распаковывать и управлять файлами.\n"
+   		     "Используйте кнопки интерфейса для работы.";
+
+   		
+   		TTF_Font* font = TTF_OpenFont(DEF_FONT_PATH "WDXLLubrifontTC-Regular.ttf", 24);
+   		
+		if (font == NULL)
+   		{
+   			ERR_MSG("[render_info_window]font: сreate failed", SDL_ERR);
+   		     	return;
+   		}
+
+   		SDL_Color text_color = {0, 0, 0, 255};
+   		
+		SDL_Surface* text_surface = TTF_RenderText_Blended_Wrapped(font, info_text,strlen(info_text),text_color, info_win->cfg.w - 60);
+   		
+		if (text_surface == NULL)
+   		{
+   		     ERR_MSG("[render_info_window]text_surface: create failed", SDL_ERR);
+   		     TTF_CloseFont(font);
+   		     return;
+   		}
+
+   		SDL_Texture* text_texture = SDL_CreateTextureFromSurface(info_win->render, text_surface);
+   		
+		SDL_FRect text_rect = {30,logo_rect.y + logo_rect.h + 20,text_surface->w,text_surface->h};
+
+   		SDL_RenderTexture(info_win->render, text_texture, NULL, &text_rect);
+
+   		SDL_DestroyTexture(text_texture);
+   		
+		SDL_DestroySurface(text_surface);
+   		
+		TTF_CloseFont(font);
+
+   		SDL_RenderPresent(info_win->render);
+
+		return;
+	}
+
 void change_scroll_offset(int *scroll_offset)
 	{
+		LOG_INFO("Измненение смещения прокрутки мыши относительно вертикали");
 
 		int y_scroll = main_event.wheel.y;
     					
@@ -1194,6 +1309,8 @@ void fill_rect(WINDOW_SET *win_obj,RECTWP *rect_obj, RGBA obj_color)
 
 void exit_from_program(void)
 	{
+
+		LOG_INFO("Выход из программы и удаление всех объектов");
 	
 		input_text_off(main_win,&archive_input_text_field);	
 		
@@ -1217,6 +1334,8 @@ void exit_from_program(void)
 
 		destroy_rectwp(&archive_name_field_title);
 
+		destroy_rectwp(&archive_name_field_input_rect);
+		
 		destroy_rectwp(&archive_name_field_input_rect);
 
 		destroy_rectwp(&add_files_button);

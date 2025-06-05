@@ -1,16 +1,15 @@
 #include "../headers/huffman.h"
 
-// Оптимизированная таблица декодирования
-static DecodeEntry decode_table[65536]; // 2^16 для быстрого поиска
+static DecodeEntry decode_table[65536]; 
 
 void build_decode_table(uint8_t *code_lengths) {
-    // Инициализация таблицы
+    
     for (int i = 0; i < 65536; i++) {
         decode_table[i].symbol = 0xFFFF;
         decode_table[i].length = 0;
     }
     
-    // Строим канонические коды
+    
     uint16_t symbols[256];
     int symbol_count = 0;
     
@@ -20,7 +19,7 @@ void build_decode_table(uint8_t *code_lengths) {
         }
     }
     
-    // Сортировка
+    
     for (int i = 0; i < symbol_count - 1; i++) {
         for (int j = i + 1; j < symbol_count; j++) {
             uint16_t a = symbols[i], b = symbols[j];
@@ -32,16 +31,16 @@ void build_decode_table(uint8_t *code_lengths) {
         }
     }
     
-    // Заполняем таблицу декодирования
-    int code = 0;
+        int code = 0;
     for (int i = 0; i < symbol_count; i++) {
         uint16_t symbol = symbols[i];
         int length = code_lengths[symbol];
         
-        if (length <= 16) { // Ограничиваем длину для таблицы
-            // Заполняем все возможные префиксы
-            int prefix_count = 1 << (16 - length);
-            uint16_t base_code = code << (16 - length);
+        if (length <= 16) { 
+		
+		int prefix_count = 1 << (16 - length);
+            	
+		uint16_t base_code = code << (16 - length);
             
             for (int j = 0; j < prefix_count; j++) {
                 decode_table[base_code + j].symbol = symbol;
@@ -66,8 +65,7 @@ void build_canonical_codes(uint8_t *code_lengths, char **codes) {
         }
     }
     
-    // Сортировка
-    for (int i = 0; i < symbol_count - 1; i++) {
+        for (int i = 0; i < symbol_count - 1; i++) {
         for (int j = i + 1; j < symbol_count; j++) {
             uint16_t a = symbols[i], b = symbols[j];
             if (code_lengths[a] > code_lengths[b] || 
@@ -97,11 +95,9 @@ void build_canonical_codes(uint8_t *code_lengths, char **codes) {
 }
 
 void count_frequencies(const uint8_t *data, size_t size, uint64_t *frequencies) {
-    // Обнуляем счетчики
-    memset(frequencies, 0, 256 * sizeof(uint64_t));
+        memset(frequencies, 0, 256 * sizeof(uint64_t));
     
-    // Оптимизированный подсчет по блокам
-    const uint8_t *end = data + size;
+        const uint8_t *end = data + size;
     while (data + 8 <= end) {
         frequencies[data[0]]++;
         frequencies[data[1]]++;
@@ -114,8 +110,7 @@ void count_frequencies(const uint8_t *data, size_t size, uint64_t *frequencies) 
         data += 8;
     }
     
-    // Оставшиеся байты
-    while (data < end) {
+        while (data < end) {
         frequencies[*data++]++;
     }
 }
@@ -137,14 +132,13 @@ void calculate_code_lengths(uint64_t *frequencies, uint8_t *code_lengths) {
     
     if (max_freq == 0) return;
     
-    // Улучшенный алгоритм расчета длин
-    for (int i = 0; i < 256; i++) {
+        for (int i = 0; i < 256; i++) {
         if (frequencies[i] > 0) {
             if (unique_symbols == 1) {
-                code_lengths[i] = 1; // Единственный символ
-            } else {
-                // Логарифмический расчет
-                double prob = (double)frequencies[i] / max_freq;
+                code_lengths[i] = 1; 
+	    } else {
+                
+		    double prob = (double)frequencies[i] / max_freq;
                 int length = 1;
                 while (prob < 0.5 && length < 15) {
                     length++;
@@ -192,7 +186,7 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
     fwrite(&header, sizeof(Huffman_Header), 1, output);
     long compressed_start = ftell(output);
     
-    // Буферизованное кодирование
+    
     uint8_t *bit_buffer = malloc(65536);
     size_t buffer_pos = 0;
     uint8_t current_byte = 0;
@@ -212,8 +206,7 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
                     current_byte = 0;
                     bit_count = 0;
                     
-                    // Сброс буфера при заполнении
-                    if (buffer_pos >= 65536) {
+                        if (buffer_pos >= 65536) {
                         fwrite(bit_buffer, 1, buffer_pos, output);
                         buffer_pos = 0;
                     }
@@ -222,13 +215,11 @@ int huffman_compress_file(const char *input_filename, const char *output_filenam
         }
     }
     
-    // Записываем последний байт
-    if (bit_count > 0) {
+	if (bit_count > 0) {
         bit_buffer[buffer_pos++] = current_byte;
     }
     
-    // Записываем оставшиеся данные
-    if (buffer_pos > 0) {
+        if (buffer_pos > 0) {
         fwrite(bit_buffer, 1, buffer_pos, output);
     }
     
@@ -269,8 +260,7 @@ int huffman_decompress_file(const char *input_filename, const char *output_filen
         return -1;
     }
 
-    // Строим таблицу декодирования
-    build_decode_table(header.code_lengths);
+        build_decode_table(header.code_lengths);
 
     FILE *output = fopen(output_filename, "wb");
     if (!output) {
@@ -296,14 +286,12 @@ int huffman_decompress_file(const char *input_filename, const char *output_filen
                     fputc(entry.symbol, output);
                     decompressed_size++;
                     bits_in_buffer -= entry.length;
-                    bit_buffer &= (1 << bits_in_buffer) - 1; // Убираем использованные биты
-                }
+                    bit_buffer &= (1 << bits_in_buffer) - 1;                 }
             }
         }
     }
 
-    // Проверяем оставшиеся биты
-    while (bits_in_buffer > 0) {
+        while (bits_in_buffer > 0) {
         DecodeEntry entry = decode_table[bit_buffer << (16 - bits_in_buffer)];
         if (entry.length > 0 && entry.length <= bits_in_buffer) {
             fputc(entry.symbol, output);
@@ -311,8 +299,7 @@ int huffman_decompress_file(const char *input_filename, const char *output_filen
             bits_in_buffer -= entry.length;
             bit_buffer &= (1 << bits_in_buffer) - 1;
         } else {
-            break; // Остались лишние биты
-        }
+            break;         }
     }
 
     fclose(input);

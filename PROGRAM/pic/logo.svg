@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="43.534504mm"
+   height="65.576004mm"
+   viewBox="0 0 43.534504 65.576004"
+   version="1.1"
+   id="svg1"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient10">
+      <stop
+         style="stop-color:#000680;stop-opacity:1;"
+         offset="0"
+         id="stop10" />
+      <stop
+         style="stop-color:#7c0080;stop-opacity:1;"
+         offset="1"
+         id="stop11" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient10"
+       id="linearGradient11"
+       x1="113.97375"
+       y1="101.35125"
+       x2="115.45875"
+       y2="12.251247"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       xlink:href="#linearGradient10"
+       id="linearGradient12"
+       gradientUnits="userSpaceOnUse"
+       x1="113.97375"
+       y1="101.35125"
+       x2="115.45875"
+       y2="12.251247" />
+    <linearGradient
+       xlink:href="#linearGradient10"
+       id="linearGradient13"
+       gradientUnits="userSpaceOnUse"
+       x1="113.97375"
+       y1="101.35125"
+       x2="115.45875"
+       y2="12.251247" />
+    <linearGradient
+       xlink:href="#linearGradient10"
+       id="linearGradient14"
+       gradientUnits="userSpaceOnUse"
+       x1="113.97375"
+       y1="101.35125"
+       x2="115.45875"
+       y2="12.251247" />
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-85.040496,-94.062026)">
+    <g
+       id="g10"
+       style="fill:url(#linearGradient11);fill-opacity:1"
+       transform="matrix(0.47274846,0,0,0.47274846,58.17633,68.37369)">
+      <rect
+         style="fill:url(#linearGradient12);fill-opacity:1;stroke-width:7.96499"
+         id="rect1"
+         width="8.1674995"
+         height="92.441246"
+         x="121.8411"
+         y="-35.17411"
+         ry="4.0837498"
+         transform="rotate(40.641113)" />
+      <rect
+         style="fill:url(#linearGradient13);fill-opacity:1;stroke-width:7.96499"
+         id="rect1-3"
+         width="8.1674995"
+         height="92.441246"
+         x="187.23607"
+         y="-3.5492353"
+         ry="4.0837498"
+         transform="rotate(40.641113)" />
+      <rect
+         style="fill:url(#linearGradient14);fill-opacity:1;stroke-width:7.96499"
+         id="rect2"
+         width="7.4249997"
+         height="54.945"
+         x="101.35124"
+         y="93.183746"
+         ry="3.7124999" />
+    </g>
+  </g>
+</svg>

@@ -22,10 +22,11 @@ enum ERROR_MSG_MODE
 
 //______________MACROS______________________
 #define ERR_MSG(MSG,ERROR_MODE) ( (ERROR_MODE) == SDL_ERR ? SDL_LogError(SDL_LOG_CATEGORY_ERROR,"%s: %s\n",( MSG),SDL_GetError()) : printf("%s\n",(MSG) ) )
-				 
+
+#define LOG_INFO(MSG) (puts(MSG "\n"))
 
 //_____________DEFINES______________________
-#define TITLE_NAME "[NOTWI] [Alpha] ACHIVATOR [BUILD 1.0.0]"
+#define TITLE_NAME "[NOTWI] [Beta] ACHIVATOR [BUILD 2.5.0]"
 
 #define WIN_WIDTH 0x280
 
@@ -161,6 +162,6 @@ void decode_files(void);
 void input_text_on(WINDOW_SET *,INPUT **);
 void input_text_off(WINDOW_SET *,INPUT **);
 void input_text_render(WINDOW_SET *,INPUT *,RECTWP *,char *);
-
+void info_win_render(void);
 
 #endif

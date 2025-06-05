@@ -1,268 +1,258 @@
 #include "../headers/archiver.h"
-#include <sys/mman.h>  // Для memory mapping больших файлов
 
 static uint32_t crc32_table[256];
 static int crc32_initialized = 0;
 
+//void print_hex_dump(const uint8_t* data, size_t size, const char* label) 
+//{
+//    printf("=== %s ===\n", label);
+//    printf("Размер: %zu байт\n", size);
+//    printf("Первые 64 байта (или весь файл, если меньше):\n");
+//    
+//    size_t bytes_to_show = (size < 64) ? size : 64;
+//    for (size_t i = 0; i < bytes_to_show; i++) {
+//        if (i % 16 == 0) printf("%04zx: ", i);
+//        printf("%02x ", data[i]);
+//        if ((i + 1) % 16 == 0) printf("\n");
+//    }
+//    if (bytes_to_show % 16 != 0) printf("\n");
+//    
+//    if (size > 64) {
+//        printf("... (показаны первые 64 из %zu байт)\n", size);
+//        printf("Последние 32 байта:\n");
+//        size_t start = size - 32;
+//        for (size_t i = start; i < size; i++) {
+//            if ((i - start) % 16 == 0) printf("%04zx: ", i);
+//            printf("%02x ", data[i]);
+//            if ((i - start + 1) % 16 == 0) printf("\n");
+//        }
+//        if ((size - start) % 16 != 0) printf("\n");
+//    }
+//    
+//    uint32_t crc = calculate_crc32(data, size);
+//    printf("CRC32: 0x%08X\n", crc);
+//    printf("================\n\n");
+//}
+//
 
+//uint8_t* compress_data_debug(const uint8_t* data, size_t size, size_t* compressed_size) 
+//{
+//    printf("\n=== ДИАГНОСТИКА СЖАТИЯ ===\n");
+//    
+//    // Показываем исходные данные
+//    print_hex_dump(data, size, "ИСХОДНЫЕ ДАННЫЕ");
+//    
+//    if (!ensure_temp_directory()) {
+//        return NULL;
+//    }
+//
+//    char temp_input[MAX_PATH_LENGTH];
+//    char temp_mid[MAX_PATH_LENGTH];
+//    char temp_output[MAX_PATH_LENGTH];
+//    
+//    snprintf(temp_input, sizeof(temp_input), "%stemp_compress_input_%d_%ld.tmp", 
+//             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
+//    snprintf(temp_mid, sizeof(temp_mid), "%stemp_compress_mid_%d_%ld.tmp", 
+//             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
+//    snprintf(temp_output, sizeof(temp_output), "%stemp_compress_output_%d_%ld.tmp", 
+//             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
+//
+//    
+//    if (!write_memory_to_file(temp_input, data, size)) {
+//        printf("Ошибка записи исходных данных\n");
+//        return NULL;
+//    }
+//
+//    
+//    size_t verify_size;
+//    uint8_t* verify_data = read_file_to_memory(temp_input, &verify_size);
+//    if (verify_data) {
+//        printf("Проверка записи исходных данных:\n");
+//        printf("  Размер: %zu (ожидалось %zu)\n", verify_size, size);
+//        uint32_t verify_crc = calculate_crc32(verify_data, verify_size);
+//        uint32_t original_crc = calculate_crc32(data, size);
+//        printf("  CRC32: 0x%08X (ожидалось 0x%08X) - %s\n", 
+//               verify_crc, original_crc, 
+//               (verify_crc == original_crc) ? "OK" : "ОШИБКА");
+//        free(verify_data);
+//    }
+//
+//    // Этап 1: LZ77 сжатие
+//    printf("\n--- ЭТАП 1: LZ77 СЖАТИЕ ---\n");
+//    if (lz77_compress_file(temp_input, temp_mid) != 0) {
+//        printf("Ошибка на этапе LZ77 сжатия\n");
+//        remove(temp_input);
+//        return NULL;
+//    }
+//
+//    // Проверяем результат LZ77
+//    size_t lz77_size;
+//    uint8_t* lz77_data = read_file_to_memory(temp_mid, &lz77_size);
+//    if (lz77_data) {
+//        print_hex_dump(lz77_data, lz77_size, "ПОСЛЕ LZ77");
+//        free(lz77_data);
+//    }
+//
+//    // Этап 2: Huffman сжатие
+//    printf("--- ЭТАП 2: HUFFMAN СЖАТИЕ ---\n");
+//    if (huffman_compress_file(temp_mid, temp_output) != 0) {
+//        printf("Ошибка на этапе Huffman сжатия\n");
+//        remove(temp_input);
+//        remove(temp_mid);
+//        return NULL;
+//    }
+//
+//    // Читаем финальный результат
+//    uint8_t* result = read_file_to_memory(temp_output, compressed_size);
+//    if (result) {
+//        print_hex_dump(result, *compressed_size, "ФИНАЛЬНЫЙ РЕЗУЛЬТАТ");
+//    }
+//
+//    // Очистка временных файлов
+//    remove(temp_input);
+//    remove(temp_mid);
+//    remove(temp_output);
+//
+//    printf("=== КОНЕЦ ДИАГНОСТИКИ СЖАТИЯ ===\n\n");
+//    return result;
+//}
+//
+//uint8_t* decompress_data_debug(const uint8_t* compressed_data, size_t compressed_size, size_t* original_size) 
+//{
+//    printf("\n=== ДИАГНОСТИКА ДЕКОМПРЕССИИ ===\n");
+//    
+//    // Показываем сжатые данные
+//    print_hex_dump(compressed_data, compressed_size, "СЖАТЫЕ ДАННЫЕ");
+//    
+//    if (!ensure_temp_directory()) {
+//        return NULL;
+//    }
+//
+//    char temp_huffman[MAX_PATH_LENGTH];
+//    char temp_lz77[MAX_PATH_LENGTH];
+//    char temp_output[MAX_PATH_LENGTH];
+//    
+//    snprintf(temp_huffman, sizeof(temp_huffman), "%stemp_decompress_huffman_%d_%ld.tmp", 
+//             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
+//    snprintf(temp_lz77, sizeof(temp_lz77), "%stemp_decompress_lz77_%d_%ld.tmp", 
+//             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
+//    snprintf(temp_output, sizeof(temp_output), "%stemp_decompress_output_%d_%ld.tmp", 
+//             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
+//
 
-// Функция для вывода hex-дампа данных
-void print_hex_dump(const uint8_t* data, size_t size, const char* label) {
-    printf("=== %s ===\n", label);
-    printf("Размер: %zu байт\n", size);
-    printf("Первые 64 байта (или весь файл, если меньше):\n");
-    
-    size_t bytes_to_show = (size < 64) ? size : 64;
-    for (size_t i = 0; i < bytes_to_show; i++) {
-        if (i % 16 == 0) printf("%04zx: ", i);
-        printf("%02x ", data[i]);
-        if ((i + 1) % 16 == 0) printf("\n");
-    }
-    if (bytes_to_show % 16 != 0) printf("\n");
-    
-    if (size > 64) {
-        printf("... (показаны первые 64 из %zu байт)\n", size);
-        printf("Последние 32 байта:\n");
-        size_t start = size - 32;
-        for (size_t i = start; i < size; i++) {
-            if ((i - start) % 16 == 0) printf("%04zx: ", i);
-            printf("%02x ", data[i]);
-            if ((i - start + 1) % 16 == 0) printf("\n");
-        }
-        if ((size - start) % 16 != 0) printf("\n");
-    }
-    
-    uint32_t crc = calculate_crc32(data, size);
-    printf("CRC32: 0x%08X\n", crc);
-    printf("================\n\n");
-}
+//    if (!write_memory_to_file(temp_huffman, compressed_data, compressed_size)) {
+//        printf("Ошибка записи сжатых данных\n");
+//        return NULL;
+//    }
+//printf("--- ЭТАП 1: HUFFMAN ДЕКОМПРЕССИЯ ---\n");
+//if (huffman_decompress_file(temp_huffman, temp_lz77) != 0) {
+//    printf("Ошибка Huffman декомпрессии\n");
+//    remove(temp_huffman);
+//    return NULL;
+//}
+//
 
-// Модифицированная функция сжатия с диагностикой
-uint8_t* compress_data_debug(const uint8_t* data, size_t size, size_t* compressed_size) {
-    printf("\n=== ДИАГНОСТИКА СЖАТИЯ ===\n");
-    
-    // Показываем исходные данные
-    print_hex_dump(data, size, "ИСХОДНЫЕ ДАННЫЕ");
-    
-    if (!ensure_temp_directory()) {
-        return NULL;
-    }
-
-    char temp_input[MAX_PATH_LENGTH];
-    char temp_mid[MAX_PATH_LENGTH];
-    char temp_output[MAX_PATH_LENGTH];
-    
-    snprintf(temp_input, sizeof(temp_input), "%stemp_compress_input_%d_%ld.tmp", 
-             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
-    snprintf(temp_mid, sizeof(temp_mid), "%stemp_compress_mid_%d_%ld.tmp", 
-             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
-    snprintf(temp_output, sizeof(temp_output), "%stemp_compress_output_%d_%ld.tmp", 
-             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
-
-    // Записываем исходные данные
-    if (!write_memory_to_file(temp_input, data, size)) {
-        printf("Ошибка записи исходных данных\n");
-        return NULL;
-    }
-
-    // Проверяем, что данные записались правильно
-    size_t verify_size;
-    uint8_t* verify_data = read_file_to_memory(temp_input, &verify_size);
-    if (verify_data) {
-        printf("Проверка записи исходных данных:\n");
-        printf("  Размер: %zu (ожидалось %zu)\n", verify_size, size);
-        uint32_t verify_crc = calculate_crc32(verify_data, verify_size);
-        uint32_t original_crc = calculate_crc32(data, size);
-        printf("  CRC32: 0x%08X (ожидалось 0x%08X) - %s\n", 
-               verify_crc, original_crc, 
-               (verify_crc == original_crc) ? "OK" : "ОШИБКА");
-        free(verify_data);
-    }
-
-    // Этап 1: LZ77 сжатие
-    printf("\n--- ЭТАП 1: LZ77 СЖАТИЕ ---\n");
-    if (lz77_compress_file(temp_input, temp_mid) != 0) {
-        printf("Ошибка на этапе LZ77 сжатия\n");
-        remove(temp_input);
-        return NULL;
-    }
-
-    // Проверяем результат LZ77
-    size_t lz77_size;
-    uint8_t* lz77_data = read_file_to_memory(temp_mid, &lz77_size);
-    if (lz77_data) {
-        print_hex_dump(lz77_data, lz77_size, "ПОСЛЕ LZ77");
-        free(lz77_data);
-    }
-
-    // Этап 2: Huffman сжатие
-    printf("--- ЭТАП 2: HUFFMAN СЖАТИЕ ---\n");
-    if (huffman_compress_file(temp_mid, temp_output) != 0) {
-        printf("Ошибка на этапе Huffman сжатия\n");
-        remove(temp_input);
-        remove(temp_mid);
-        return NULL;
-    }
-
-    // Читаем финальный результат
-    uint8_t* result = read_file_to_memory(temp_output, compressed_size);
-    if (result) {
-        print_hex_dump(result, *compressed_size, "ФИНАЛЬНЫЙ РЕЗУЛЬТАТ");
-    }
-
-    // Очистка временных файлов
-    remove(temp_input);
-    remove(temp_mid);
-    remove(temp_output);
-
-    printf("=== КОНЕЦ ДИАГНОСТИКИ СЖАТИЯ ===\n\n");
-    return result;
-}
-
-// Модифицированная функция декомпрессии с диагностикой
-uint8_t* decompress_data_debug(const uint8_t* compressed_data, size_t compressed_size, size_t* original_size) {
-    printf("\n=== ДИАГНОСТИКА ДЕКОМПРЕССИИ ===\n");
-    
-    // Показываем сжатые данные
-    print_hex_dump(compressed_data, compressed_size, "СЖАТЫЕ ДАННЫЕ");
-    
-    if (!ensure_temp_directory()) {
-        return NULL;
-    }
-
-    char temp_huffman[MAX_PATH_LENGTH];
-    char temp_lz77[MAX_PATH_LENGTH];
-    char temp_output[MAX_PATH_LENGTH];
-    
-    snprintf(temp_huffman, sizeof(temp_huffman), "%stemp_decompress_huffman_%d_%ld.tmp", 
-             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
-    snprintf(temp_lz77, sizeof(temp_lz77), "%stemp_decompress_lz77_%d_%ld.tmp", 
-             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
-    snprintf(temp_output, sizeof(temp_output), "%stemp_decompress_output_%d_%ld.tmp", 
-             DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
-
-    // Записываем сжатые данные
-    if (!write_memory_to_file(temp_huffman, compressed_data, compressed_size)) {
-        printf("Ошибка записи сжатых данных\n");
-        return NULL;
-    }
-printf("--- ЭТАП 1: HUFFMAN ДЕКОМПРЕССИЯ ---\n");
-if (huffman_decompress_file(temp_huffman, temp_lz77) != 0) {
-    printf("Ошибка Huffman декомпрессии\n");
-    remove(temp_huffman);
-    return NULL;
-}
-
-// ПРАВИЛЬНО: читаем данные и вычисляем CRC32
-size_t huffman_result_size;
-uint8_t* huffman_result = read_file_to_memory(temp_lz77, &huffman_result_size);
-if (huffman_result) {
-    uint32_t huffman_crc = calculate_crc32(huffman_result, huffman_result_size);
-    printf("CRC32 после HUFFMAN: 0x%08X\n", huffman_crc);
-    print_hex_dump(huffman_result, huffman_result_size, "ПОСЛЕ HUFFMAN ДЕКОМПРЕССИИ");
-    free(huffman_result);
-}
-
-// Этап 2: LZ77 декомпрессия  
-printf("--- ЭТАП 2: LZ77 ДЕКОМПРЕССИЯ ---\n");
-if (lz77_decompress_file(temp_lz77, temp_output) != 0) {
-    printf("Ошибка LZ77 декомпрессии\n");
-    remove(temp_huffman);
-    remove(temp_lz77);
-    return NULL;
-}
-
-// ПРАВИЛЬНО: читаем финальные данные и вычисляем CRC32
-uint8_t* result = read_file_to_memory(temp_output, original_size);
-if (result) {
-    uint32_t final_crc = calculate_crc32(result, *original_size);
-    printf("CRC32 после LZ77: 0x%08X\n", final_crc);
-    print_hex_dump(result, *original_size, "ФИНАЛЬНЫЙ РЕЗУЛЬТАТ ДЕКОМПРЕССИИ");
-}
-
-    // Очистка временных файлов
-    remove(temp_huffman);
-    remove(temp_lz77);
-    remove(temp_output);
-
-    printf("=== КОНЕЦ ДИАГНОСТИКИ ДЕКОМПРЕССИИ ===\n\n");
-    return result;
-}
-
-// Функция для тестирования pipeline сжатия-декомпрессии
-int test_compression_pipeline(const char* test_file) {
-    printf("=== ТЕСТ PIPELINE СЖАТИЯ-ДЕКОМПРЕССИИ ===\n");
-    printf("Тестовый файл: %s\n", test_file);
-    
-    // Читаем исходный файл
-    size_t original_size;
-    uint8_t* original_data = read_file_to_memory(test_file, &original_size);
-    if (!original_data) {
-        printf("Ошибка чтения тестового файла\n");
-        return 0;
-    }
-    
-    uint32_t original_crc = calculate_crc32(original_data, original_size);
-    printf("Исходный файл: %zu байт, CRC32=0x%08X\n", original_size, original_crc);
-    
-    // Сжимаем
-    size_t compressed_size;
-    uint8_t* compressed_data = compress_data_debug(original_data, original_size, &compressed_size);
-    if (!compressed_data) {
-        printf("Ошибка сжатия\n");
-        free(original_data);
-        return 0;
-    }
-    
-    printf("Сжатые данные: %zu байт\n", compressed_size);
-    
-    // Декомпрессируем
-    size_t decompressed_size;
-    uint8_t* decompressed_data = decompress_data_debug(compressed_data, compressed_size, &decompressed_size);
-    if (!decompressed_data) {
-        printf("Ошибка декомпрессии\n");
-        free(original_data);
-        free(compressed_data);
-        return 0;
-    }
-    
-    uint32_t decompressed_crc = calculate_crc32(decompressed_data, decompressed_size);
-    printf("Декомпрессированные данные: %zu байт, CRC32=0x%08X\n", decompressed_size, decompressed_crc);
-    
-    // Сравниваем
-    printf("\n=== СРАВНЕНИЕ РЕЗУЛЬТАТОВ ===\n");
-    printf("Размер: %zu -> %zu (%s)\n", original_size, decompressed_size, 
-           (original_size == decompressed_size) ? "OK" : "ОШИБКА");
-    printf("CRC32: 0x%08X -> 0x%08X (%s)\n", original_crc, decompressed_crc,
-           (original_crc == decompressed_crc) ? "OK" : "ОШИБКА");
-    
-    if (original_size == decompressed_size && original_crc == decompressed_crc) {
-        printf("ТЕСТ ПРОЙДЕН УСПЕШНО!\n");
-        
-        // Дополнительно: побайтовое сравнение
-        int bytes_differ = 0;
-        for (size_t i = 0; i < original_size; i++) {
-            if (original_data[i] != decompressed_data[i]) {
-                if (bytes_differ < 10) { // Показываем первые 10 различий
-                    printf("Различие в позиции %zu: 0x%02X != 0x%02X\n", 
-                           i, original_data[i], decompressed_data[i]);
-                }
-                bytes_differ++;
-            }
-        }
-        if (bytes_differ > 0) {
-            printf("Обнаружено различий в байтах: %d\n", bytes_differ);
-        }
-    } else {
-        printf("ТЕСТ НЕ ПРОЙДЕН!\n");
-    }
-    
-    free(original_data);
-    free(compressed_data);
-    free(decompressed_data);
-    
-    return (original_size == decompressed_size && original_crc == decompressed_crc) ? 1 : 0;
-}
+//size_t huffman_result_size;
+//uint8_t* huffman_result = read_file_to_memory(temp_lz77, &huffman_result_size);
+//if (huffman_result) {
+//    uint32_t huffman_crc = calculate_crc32(huffman_result, huffman_result_size);
+//    printf("CRC32 после HUFFMAN: 0x%08X\n", huffman_crc);
+//    print_hex_dump(huffman_result, huffman_result_size, "ПОСЛЕ HUFFMAN ДЕКОМПРЕССИИ");
+//    free(huffman_result);
+//}
+//
+//printf("--- ЭТАП 2: LZ77 ДЕКОМПРЕССИЯ ---\n");
+//if (lz77_decompress_file(temp_lz77, temp_output) != 0) {
+//    printf("Ошибка LZ77 декомпрессии\n");
+//    remove(temp_huffman);
+//    remove(temp_lz77);
+//    return NULL;
+//}
+//
+//uint8_t* result = read_file_to_memory(temp_output, original_size);
+//if (result) {
+//    uint32_t final_crc = calculate_crc32(result, *original_size);
+//    printf("CRC32 после LZ77: 0x%08X\n", final_crc);
+//    print_hex_dump(result, *original_size, "ФИНАЛЬНЫЙ РЕЗУЛЬТАТ ДЕКОМПРЕССИИ");
+//}
+//	remove(temp_huffman);
+//    	remove(temp_lz77);
+//    	remove(temp_output);
+//
+//    printf("=== КОНЕЦ ДИАГНОСТИКИ ДЕКОМПРЕССИИ ===\n\n");
+//    return result;
+//}
+//
+//int test_compression_pipeline(const char* test_file) {
+//    printf("=== ТЕСТ PIPELINE СЖАТИЯ-ДЕКОМПРЕССИИ ===\n");
+//    printf("Тестовый файл: %s\n", test_file);
+//    
+//    size_t original_size;
+//    uint8_t* original_data = read_file_to_memory(test_file, &original_size);
+//    if (!original_data) {
+//        printf("Ошибка чтения тестового файла\n");
+//        return 0;
+//    }
+//    
+//    uint32_t original_crc = calculate_crc32(original_data, original_size);
+//    printf("Исходный файл: %zu байт, CRC32=0x%08X\n", original_size, original_crc);
+//    
+//    size_t compressed_size;
+//    uint8_t* compressed_data = compress_data_debug(original_data, original_size, &compressed_size);
+//    if (!compressed_data) {
+//        printf("Ошибка сжатия\n");
+//        free(original_data);
+//        return 0;
+//    }
+//    
+//    printf("Сжатые данные: %zu байт\n", compressed_size);
+//    
+//    size_t decompressed_size;
+//    uint8_t* decompressed_data = decompress_data_debug(compressed_data, compressed_size, &decompressed_size);
+//    if (!decompressed_data) {
+//        printf("Ошибка декомпрессии\n");
+//        free(original_data);
+//        free(compressed_data);
+//        return 0;
+//    }
+//    
+//    uint32_t decompressed_crc = calculate_crc32(decompressed_data, decompressed_size);
+//    printf("Декомпрессированные данные: %zu байт, CRC32=0x%08X\n", decompressed_size, decompressed_crc);
+//    
+//    
+//    printf("\n=== СРАВНЕНИЕ РЕЗУЛЬТАТОВ ===\n");
+//    printf("Размер: %zu -> %zu (%s)\n", original_size, decompressed_size, 
+//           (original_size == decompressed_size) ? "OK" : "ОШИБКА");
+//    printf("CRC32: 0x%08X -> 0x%08X (%s)\n", original_crc, decompressed_crc,
+//           (original_crc == decompressed_crc) ? "OK" : "ОШИБКА");
+//    
+//    if (original_size == decompressed_size && original_crc == decompressed_crc) {
+//        printf("ТЕСТ ПРОЙДЕН УСПЕШНО!\n");
+//        
+//        
+//        int bytes_differ = 0;
+//        for (size_t i = 0; i < original_size; i++) {
+//            if (original_data[i] != decompressed_data[i]) {
+//                if (bytes_differ < 10) { // Показываем первые 10 различий
+//                    printf("Различие в позиции %zu: 0x%02X != 0x%02X\n", 
+//                           i, original_data[i], decompressed_data[i]);
+//                }
+//                bytes_differ++;
+//            }
+//        }
+//        if (bytes_differ > 0) {
+//            printf("Обнаружено различий в байтах: %d\n", bytes_differ);
+//        }
+//    } else {
+//        printf("ТЕСТ НЕ ПРОЙДЕН!\n");
+//    }
+//    
+//    free(original_data);
+//    free(compressed_data);
+//    free(decompressed_data);
+//    
+//    return (original_size == decompressed_size && original_crc == decompressed_crc) ? 1 : 0;
+//}
 
 
 
@@ -286,7 +276,7 @@ uint32_t calculate_crc32(const uint8_t* data, size_t size) {
     init_crc32();
     uint32_t crc = 0xFFFFFFFF;
     
-    // Оптимизированный расчет CRC32 блоками по 8 байт
+    
     const uint8_t* end = data + size;
     while (data + 8 <= end) {
         crc = crc32_table[(crc ^ data[0]) & 0xFF] ^ (crc >> 8);
@@ -300,7 +290,7 @@ uint32_t calculate_crc32(const uint8_t* data, size_t size) {
         data += 8;
     }
     
-    // Остаток
+   
     while (data < end) {
         crc = crc32_table[(crc ^ *data++) & 0xFF] ^ (crc >> 8);
     }
@@ -319,7 +309,7 @@ int ensure_temp_directory(void) {
     return 1;
 }
 
-// Оптимизированное чтение файлов с использованием memory mapping для больших файлов
+
 uint8_t* read_file_to_memory(const char* filename, size_t* size) {
     int fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -345,8 +335,8 @@ uint8_t* read_file_to_memory(const char* filename, size_t* size) {
 
     uint8_t* data;
     
-    // Для больших файлов используем memory mapping
-    if (*size > 100 * 1024 * 1024) { // > 100MB
+   
+    if (*size > 100 * 1024 * 1024) {
         data = mmap(NULL, *size, PROT_READ, MAP_PRIVATE, fd, 0);
         if (data == MAP_FAILED) {
             printf("Ошибка: не удается создать memory mapping для файла %s\n", filename);
@@ -354,22 +344,21 @@ uint8_t* read_file_to_memory(const char* filename, size_t* size) {
             return NULL;
         }
         
-        // Копируем данные из memory mapping в обычную память
-        uint8_t* result = malloc(*size);
+        
+	uint8_t* result = malloc(*size);
         if (!result) {
             munmap(data, *size);
             close(fd);
             return NULL;
         }
         
-        // Эффективное копирование большими блоками
         memcpy(result, data, *size);
         munmap(data, *size);
         close(fd);
         return result;
     } else {
-        // Для небольших файлов используем обычный метод
-        data = malloc(*size);
+        
+	    data = malloc(*size);
         if (!data) {
             printf("Ошибка: не удается выделить память для файла %s (размер: %zu)\n", filename, *size);
             close(fd);
@@ -377,14 +366,14 @@ uint8_t* read_file_to_memory(const char* filename, size_t* size) {
         }
 
         ssize_t total_read = 0;
-        size_t chunk_size = 1024 * 1024; // 1MB блоки
+        size_t chunk_size = 1024 * 1024; 
         
         while (total_read < *size) {
             size_t to_read = (*size - total_read < chunk_size) ? *size - total_read : chunk_size;
             ssize_t read_count = read(fd, data + total_read, to_read);
             
             if (read_count <= 0) {
-                if (read_count == 0) break; // EOF
+                if (read_count == 0) break; 
                 printf("Ошибка чтения файла %s\n", filename);
                 free(data);
                 close(fd);
@@ -399,15 +388,14 @@ uint8_t* read_file_to_memory(const char* filename, size_t* size) {
             printf("Предупреждение: прочитано %zd из %zu байт файла %s\n", 
                    total_read, *size, filename);
             *size = total_read;
-            // Корректируем размер выделенной памяти
-            data = realloc(data, *size);
+	    data = realloc(data, *size);
         }
 
         return data;
     }
 }
 
-// Оптимизированная запись файлов
+
 int write_memory_to_file(const char* filename, const uint8_t* data, size_t size) {
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
@@ -421,7 +409,7 @@ int write_memory_to_file(const char* filename, const uint8_t* data, size_t size)
     }
 
     ssize_t total_written = 0;
-    size_t chunk_size = 1024 * 1024; // 1MB блоки
+    size_t chunk_size = 1024 * 1024; 
     
     while (total_written < size) {
         size_t to_write = (size - total_written < chunk_size) ? size - total_written : chunk_size;
@@ -495,10 +483,7 @@ char* get_filename_from_path(const char* path) {
     return result;
 }
 
-// Исправленная функция сжатия с проверкой результата
-uint8_t* run_compression_pipeline(const uint8_t* data, size_t size, size_t* compressed_size,
-                                 int (*first_stage)(const char*, const char*),
-                                 int (*second_stage)(const char*, const char*)) {
+uint8_t* run_compression_pipeline(const uint8_t* data, size_t size, size_t* compressed_size,int (*first_stage)(const char*, const char*),int (*second_stage)(const char*, const char*)) {
     
     if (!ensure_temp_directory()) {
         return NULL;
@@ -515,12 +500,10 @@ uint8_t* run_compression_pipeline(const uint8_t* data, size_t size, size_t* comp
     snprintf(temp_output, sizeof(temp_output), "%stemp_compress_output_%d_%ld.tmp", 
              DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
 
-    // Записываем исходные данные
-    if (!write_memory_to_file(temp_input, data, size)) {
+      if (!write_memory_to_file(temp_input, data, size)) {
         return NULL;
     }
 
-    // Этап 1: LZ77 сжатие
     if (first_stage(temp_input, temp_mid) != 0) {
         printf("Ошибка на этапе LZ77 сжатия\n");
         remove(temp_input);
@@ -528,7 +511,6 @@ uint8_t* run_compression_pipeline(const uint8_t* data, size_t size, size_t* comp
     }
 
 
-    // Проверяем, что промежуточный файл создан
     struct stat st;
     if (stat(temp_mid, &st) != 0) {
         printf("Ошибка: промежуточный файл не создан\n");
@@ -536,18 +518,14 @@ uint8_t* run_compression_pipeline(const uint8_t* data, size_t size, size_t* comp
         return NULL;
     }
 
-    // Этап 2: Huffman сжатие
     if (second_stage(temp_mid, temp_output) != 0) {
         printf("Ошибка на этапе Huffman сжатия\n");
         remove(temp_input);
         remove(temp_mid);
         return NULL;
     }
-
-    // Читаем результат
     uint8_t* result = read_file_to_memory(temp_output, compressed_size);
 
-    // Очистка временных файлов
     remove(temp_input);
     remove(temp_mid);
     remove(temp_output);
@@ -559,7 +537,6 @@ uint8_t* compress_data(const uint8_t* data, size_t size, size_t* compressed_size
     return run_compression_pipeline(data, size, compressed_size, lz77_compress_file, huffman_compress_file);
 }
 
-// Исправленная функция декомпрессии
 uint8_t* decompress_data(const uint8_t* compressed_data, size_t compressed_size, size_t* original_size) {
     if (!ensure_temp_directory()) {
         return NULL;
@@ -576,13 +553,11 @@ uint8_t* decompress_data(const uint8_t* compressed_data, size_t compressed_size,
     snprintf(temp_output, sizeof(temp_output), "%stemp_decompress_output_%d_%ld.tmp", 
              DEF_PATH_OUTPUT_TMP, getpid(), time(NULL));
 
-    // Записываем сжатые данные
     if (!write_memory_to_file(temp_huffman, compressed_data, compressed_size)) {
         return NULL;
     }
 
 
-    // Этап 1: Huffman декомпрессия
     if ( huffman_decompress_file(temp_huffman, temp_lz77)!= 0) {
         printf("Ошибка Huffman декомпрессии\n");
         remove(temp_huffman);
@@ -590,7 +565,6 @@ uint8_t* decompress_data(const uint8_t* compressed_data, size_t compressed_size,
     }
 
 
-    // Этап 2: LZ77 декомпрессия
     if (lz77_decompress_file(temp_lz77, temp_output) != 0) {
         printf("Ошибка LZ77 декомпрессии\n");
         remove(temp_huffman);
@@ -598,10 +572,8 @@ uint8_t* decompress_data(const uint8_t* compressed_data, size_t compressed_size,
         return NULL;
     }
 
-    // Читаем результат
     uint8_t* result = read_file_to_memory(temp_output, original_size);
 
-    // Очистка временных файлов
     remove(temp_huffman);
     remove(temp_lz77);
     remove(temp_output);
@@ -642,7 +614,6 @@ int extract_archive(const char* archive_name, const char* output_dir) {
         return 0;
     }
 
-    // Увеличиваем буфер для больших файлов
     setvbuf(archive_fp, NULL, _IOFBF, 1024 * 1024);
 
     ArchiveHeader header;
@@ -666,7 +637,6 @@ int extract_archive(const char* archive_name, const char* output_dir) {
         return 0;
     }
 
-    // Читаем таблицу файлов
     for (uint32_t i = 0; i < header.file_count; i++) {
         if (fread(&files[i].name_length, sizeof(uint16_t), 1, archive_fp) != 1) {
             printf("Ошибка чтения длины имени файла %u\n", i);
@@ -702,7 +672,6 @@ int extract_archive(const char* archive_name, const char* output_dir) {
 
     mkdir(output_dir, 0755);
 
-    // Извлекаем файлы
     for (uint32_t i = 0; i < header.file_count; i++) {
         printf("Извлечение файла %s (%lu байт)... ", files[i].filename, files[i].original_size);
         fflush(stdout);
@@ -753,7 +722,6 @@ int extract_archive(const char* archive_name, const char* output_dir) {
             printf("ОШИБКА\n");
             printf("     Контрольные суммы не совпадают!\n");
             
-            // Дополнительная диагностика - покажем первые 32 байта
             printf("     Первые 32 байта данных: ");
             for (int j = 0; j < 32 && j < decompressed_size; j++) {
                 printf("%02X ", decompressed_data[j]);
@@ -865,7 +833,6 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
         return 0;
     }
 
-    // Увеличиваем буфер для больших файлов
     setvbuf(archive_fp, NULL, _IOFBF, 1024 * 1024);
 
     ArchiveHeader header;
@@ -888,7 +855,6 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
         return 0;
     }
 
-    // Предварительная обработка файлов
     uint32_t table_size = 0;
     for (int i = 0; i < file_count; i++) {
         full_paths[i] = get_full_path(filenames[i]);
@@ -923,18 +889,15 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
 
     header.table_size = table_size;
 
-    // Записываем заголовок
     if (fwrite(&header, sizeof(ArchiveHeader), 1, archive_fp) != 1) {
         printf("Ошибка записи заголовка архива\n");
         cleanup_and_exit(full_paths, files, file_count, archive_fp);
         return 0;
     }
 
-    // Пропускаем место для таблицы файлов
     size_t table_start = ftell(archive_fp);
     fseek(archive_fp, table_size, SEEK_CUR);
 
-    // Записываем сжатые файлы
     for (int i = 0; i < file_count; i++) {
         printf("Обработка файла %d/%d: %s (%lu байт)\n", 
                i + 1, file_count, files[i].filename, files[i].original_size);
@@ -942,7 +905,6 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
         
         files[i].file_offset = ftell(archive_fp);
 
-        // Читаем файл в память
         size_t file_size;
         uint8_t* file_data = read_file_to_memory(full_paths[i], &file_size);
         if (!file_data) {
@@ -951,15 +913,12 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
             return 0;
         }
 
-        // ВАЖНО: Вычисляем CRC32 от ИСХОДНЫХ данных перед сжатием
-        files[i].checksum = calculate_crc32(file_data, file_size);
+         files[i].checksum = calculate_crc32(file_data, file_size);
         printf("  -> CRC32 исходного файла: 0x%08X\n", files[i].checksum);
 
-        // Сжимаем файл
         size_t compressed_size;
         uint8_t* compressed_data = compress_data(file_data, file_size, &compressed_size);
         
-        // Освобождаем память от исходных данных
         free(file_data);
 
         if (!compressed_data) {
@@ -970,7 +929,6 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
 
         files[i].compressed_size = compressed_size;
 
-        // Записываем сжатые данные в архив
         if (fwrite(compressed_data, 1, compressed_size, archive_fp) != compressed_size) {
             printf("Ошибка записи сжатых данных файла %s\n", full_paths[i]);
             free(compressed_data);
@@ -980,19 +938,15 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
 
         free(compressed_data);
         
-        // Показываем прогресс
         float ratio = file_size > 0 ? (float)compressed_size * 100 / file_size : 0;
         printf("  -> Сжато: %lu байт (%.1f%%)\n", compressed_size, ratio);
     }
-
-    // Возвращаемся к началу и записываем таблицу файлов
     if (fseek(archive_fp, table_start, SEEK_SET) != 0) {
         printf("Ошибка позиционирования для записи таблицы файлов\n");
         cleanup_and_exit(full_paths, files, file_count, archive_fp);
         return 0;
     }
 
-    // Записываем таблицу файлов
     for (int i = 0; i < file_count; i++) {
         uint16_t name_length = strlen(files[i].filename);
         
@@ -1008,12 +962,10 @@ int create_archive(const char* archive_name, char** filenames, int file_count) {
         }
     }
 
-    // Освобождаем память и закрываем файл
     cleanup_and_exit(full_paths, files, file_count, archive_fp);
 
     printf("Архив %s успешно создан!\n", archive_name);
     
-    // Показываем статистику
     uint64_t total_original = 0, total_compressed = 0;
     for (int i = 0; i < file_count; i++) {
         total_original += files[i].original_size;
@@ -1071,7 +1023,6 @@ int test_archive(const char* archive_name) {
         return 0;
     }
 
-    // Читаем таблицу файлов
     for (uint32_t i = 0; i < header.file_count; i++) {
         if (fread(&files[i].name_length, sizeof(uint16_t), 1, archive_fp) != 1) {
             printf("Ошибка чтения длины имени файла %u\n", i);
@@ -1100,8 +1051,6 @@ int test_archive(const char* archive_name) {
             goto cleanup_test;
         }
     }
-
-    // Проверяем каждый файл
     int errors = 0;
     for (uint32_t i = 0; i < header.file_count; i++) {
         printf("Проверка файла %s... ", files[i].filename);
@@ -1198,7 +1147,6 @@ void print_file_info(const char* filename) {
     }
 }
 
-// Утилитарная функция для форматирования размеров
 char* format_size(uint64_t size) {
     static char buffer[32];
     const char* units[] = {"B", "KB", "MB", "GB", "TB"};
@@ -1219,7 +1167,6 @@ char* format_size(uint64_t size) {
     return buffer;
 }
 
-// Функция для вывода прогресс-бара
 void print_progress(int current, int total, const char* operation) {
     int bar_width = 50;
     float progress = (float)current / total;
