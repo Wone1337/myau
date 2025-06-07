@@ -1,7 +1,5 @@
 #IGNORED
-/build/
+/build/*
 /OBSIDIAN/
-/outputs/
-/logs/
-
-
+/outputs/*
+/logs/*
